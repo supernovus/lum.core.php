@@ -1,0 +1,28 @@
+{
+  "name": "lum/lum-core",
+  "description": "Lum Core library and plugins",
+  "license": "MIT",
+  "authors":
+  [
+    {
+      "name": "Timothy Totten",
+      "email": "supernovus@gmail.com",
+      "role": "Original Author"
+    }
+  ],
+  "require":
+  {
+    "php": "^7.0",
+    "ext-json": "*",
+    "ralouphie/getallheaders": "^3.0",
+    "lum/lum-file": "^1.0 || dev-master",
+    "lum/lum-encode": "^1.0 || dev-master"
+  },
+  "autoload":
+  {
+    "psr-4":
+    {
+      "Lum\\": "lib"
+    }
+  }
+}
