@@ -13,6 +13,8 @@ class Core implements \ArrayAccess
 {
   protected static $__instance;
 
+  public $allowOverwrite = false;
+
   protected $lib     = [];    // Library objects.
   protected $methods = [];    // Extension methods (callbacks.)
   protected $opts    = [];    // Options passed to the constructor.
@@ -169,7 +171,7 @@ class Core implements \ArrayAccess
   // Not meant for use outside of the Plugins plugin.
   public function _add_plugin ($name, $plugin)
   {
-    if (isset($this->lib[$name]))
+    if (isset($this->lib[$name]) && !$this->allowOverwrite)
     {
       throw new Exception("Cannot overwrite '$name' plugin.");
     }
