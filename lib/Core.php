@@ -15,6 +15,8 @@ class Core implements \ArrayAccess
 
   public $allowOverwrite = false;
 
+  protected $exceptionHandler; // Exception handler.
+
   protected $lib     = [];    // Library objects.
   protected $methods = [];    // Extension methods (callbacks.)
   protected $opts    = [];    // Options passed to the constructor.
@@ -134,6 +136,39 @@ class Core implements \ArrayAccess
       ? (isset($opts['plugins']) ? $opts['plugins'] : $opts) 
       : [];
     $this->lib['plugins'] = new \Lum\Plugins\Plugins($plugopts);
+  }
+
+  /**
+   * Set an Exception handler that will be used by your app whenever
+   * an exception is thrown.
+   *
+   * @param Callable $handler  The exception handler to set.
+   * @param bool $overwrite    (Optional, default false) Overwrite existing?
+   * @return mixed  If an old handler was set and we overwrote it, the old
+   *                handler will be returned. Otherwise we return null/void.
+   */
+  public function setExceptionHandler (Callable $handler, $overwrite=false)
+  {
+    if ($overwrite || !isset($this->exceptionHandler))
+    {
+      $oldhandler = $this->exceptionHandler;
+      $this->exceptionHandler = $handler;
+      set_exception_handler($handler);
+      return $oldhandler;
+    }
+  }
+
+  /**
+   * Clear the currently set Exception handler.
+   *
+   * @return mixed  The Exception handler that we cleared if it was set.
+   */
+  public function clearExceptionHandler ()
+  {
+    $handler = $this->exceptionHandler;
+    unset($this->exceptionHandler);
+    set_exception_handler(null);
+    return $handler;
   }
 
   /**
