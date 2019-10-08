@@ -785,7 +785,7 @@ class Router
           http_response_code($route->view_status);
         }
         $loader = $route->view_loader;
-        return $core->lib[$loader]->load($route->view, $context->to_array());
+        return $core->$loader->load($route->view, $context->to_array());
       }
       elseif ($route->controller)
       {

@@ -55,14 +55,18 @@ class Site
     $core = \Lum\Core::getInstance();
     $content = $core->capture->end();
     $template = $this->template;
-    $loader = Null;
+    $loader = null;
     if (strpos($template, ':') !== False)
     {
       $tparts = explode(':', $template);
-      if (isset($core->lib[$tparts[0]]))
+      $loader = $tparts[0];
+      if (isset($core->$loader]))
       {
-        $loader   = $tparts[0];
         $template = $tparts[1];
+      }
+      else
+      {
+        $loader = null;
       }
     }
     $pagedata = array(
