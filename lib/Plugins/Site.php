@@ -60,7 +60,7 @@ class Site
     {
       $tparts = explode(':', $template);
       $loader = $tparts[0];
-      if (isset($core->$loader]))
+      if (isset($core->$loader))
       {
         $template = $tparts[1];
       }
