@@ -8,7 +8,7 @@ $simpleDOM = function_exists('simpledom_import_simplexml');
 
 $t = new \Lum\Test();
 
-$t->plan(12);
+$t->plan(18);
 
 class Foo extends \Lum\Data\Arrayish
 {
@@ -115,6 +115,24 @@ else
     $t->skip($smsg, $stest);
   }
 }
+
+// Let's test the to_json() method.
+$foo = new Foo(['id'=>1, 'hello'=>'/world']);
+$json = $foo->to_json();
+$t->is($json, '{"id":1,"hello":"\/world"}', 'to_json() returns proper string');
+
+$json = $foo->to_json(true);
+$t->is($json, "{\n    \"id\": 1,\n    \"hello\": \"/world\"\n}", 'to_json(true) returns formatted string');
+
+$foo = new Foo(['nums'=>[1, 2, 3.0, '4', '5.0']]);
+$json = $foo->to_json();
+$t->is($json, '{"nums":[1,2,3,"4","5.0"]}', 'to_json() numeric handling');
+$json = $foo->to_json(['numeric'=>true]);
+$t->is($json, '{"nums":[1,2,3,4,5]}', "to_json(['numeric'=>true])");
+$json = $foo->to_json(['numbers'=>true]);
+$t->is($json, '{"nums":[1,2,3.0,4,5.0]}', "to_json(['numbers'=>true])");
+$json = $foo->to_json(['numbers'=>true, 'numeric'=>false]);
+$t->is($json, '{"nums":[1,2,3.0,"4","5.0"]}', 'to_json can overwrite group options');
 
 echo $t->tap();
 return $t;
