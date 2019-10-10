@@ -16,13 +16,13 @@
     "ext-json": "*",
     "ralouphie/getallheaders": "^3.0",
     "lum/lum-file": "^1.0 || dev-master",
-    "lum/lum-encode": "^1.0 || dev-master"
+    "lum/lum-encode": "^1.0 || dev-master",
+    "lum/lum-arrays": "^1.0 || dev-master"
   },
   "require-dev":
   {
     "lum/lum-test": "^2.1 || dev-master",
-    "lum/simpledom": "^2.1 || dev-master",
-    "lum/lum-arrays": "^1.0 || dev-master"
+    "lum/simpledom": "^2.1 || dev-master"
   },
   "autoload":
   {
