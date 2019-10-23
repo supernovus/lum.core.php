@@ -297,20 +297,23 @@ class Url
   /**
    * Transform a PHP array/object into a URL-safe string.
    *
-   * @param mixed $input        The PHP array/object to encode.
-   * @param int   $format       One of:
-   *                            - URL::FORMAT_JSON   (default)
-   *                            - URL::FORMAT_SERIAL
-   *                            - URL::FORMAT_UBJSON
-   *
-   * The format of the string is simple:
-   *
    * We encode the input, then we Base64 encode the data string. 
    * Finally we perform the following character substitutions:
    *
    *   '+' becomes '-'
    *   '/' becomes '_'
+   *
+   * If $useTildes is true, then:
+   *
    *   '=' becomes '~'
+   *
+   * If $useTildes is false, we strip all '=' characters.
+   *
+   * @param mixed $input        The PHP array/object to encode.
+   * @param int   $format       One of:
+   *                            - URL::FORMAT_JSON   (default)
+   *                            - URL::FORMAT_SERIAL
+   *                            - URL::FORMAT_UBJSON
    *
    * The encoding format can be one of the types listed above.
    *
@@ -319,8 +322,12 @@ class Url
    * it can encode almost any PHP object natively.
    * UBJSON is the smallest format, as it is a binary version of JSON.
    * It uses pack/unpack and thus may be slightly slower than JSON.
+   *
+   * @param bool $useTildes   If true, replace '=' with '~'.
+   *
+   * @return string  A URL-safe base64 encoded string.
    */
-  public static function encodeObject ($object, $format=0)
+  public static function encodeObject ($object, $format=0, $useTildes=false)
   {
     if ($format === self::FORMAT_JSON)
     {
@@ -338,7 +345,17 @@ class Url
     {
       throw new \Exception("Unrecognized format in URL::encodeObject()");
     }
-    return strtr(base64_encode($encoded), '+/=', '-_~');
+    $base64 = base64_encode($encoded);
+    if ($useTildes)
+    {
+      $base64 = strtr($base64, '+/=', '-_~');
+    }
+    else
+    {
+      $base64 = strtr($base64, '+/', '-_');
+      $base64 = str_replace('=', '', $base64);
+    }
+    return $base64;
   }
 
   /**
@@ -346,16 +363,17 @@ class Url
    *
    * @param mixed $input      The PHP array/object to encode.
    * @param bool  $serialize  If true, FORMAT_SERIAL, otherwise FORMAT_JSON.
+   * @param bool  $tildes     Passed to encodeObject, see it for details.
    *
    * See encodeObject() for the rest of the details.
    */
-  public static function encodeArray ($object, $serialize=false)
+  public static function encodeArray ($object, $serialize=false, $tildes=false)
   {
     if ($serialize)
       $format = self::FORMAT_SERIAL;
     else
       $format = self::FORMAT_JSON;
-    return self::encodeObject($object, $format);
+    return self::encodeObject($object, $format, $tildes);
   }
 
   /** 
@@ -378,6 +396,7 @@ class Url
   {
 #    error_log("decodeObject(string, $format, $type)");
     $decoded = base64_decode(strtr($string, '-_~', '+/='));
+    $decoded .= substr("===", ((strlen($decoded)+3)%4));
     if ($format === self::FORMAT_JSON)
     {
       if ($type === self::TYPE_ARRAY)
