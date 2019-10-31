@@ -415,9 +415,9 @@ class Url
     elseif ($format === self::FORMAT_UBJSON)
     {
       if ($type === self::TYPE_ARRAY)
-        $type = \Lum\UBJSON::TYPE_ARRAY;
+        $type = \Lum\Encode\UBJSON::TYPE_ARRAY;
       elseif ($type === self::TYPE_OBJECT)
-        $type = \Lum\UBJSON::TYPE_OBJECT;
+        $type = \Lum\Encode\UBJSON::TYPE_OBJECT;
       else
         throw new \Exception("Unrecognized UBJSON type in URL::decodeObject()");
 
