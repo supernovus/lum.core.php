@@ -395,8 +395,9 @@ class Url
   public static function decodeObject ($string, $format=0, $type=0)
   {
 #    error_log("decodeObject(string, $format, $type)");
-    $decoded = base64_decode(strtr($string, '-_~', '+/='));
-    $decoded .= substr("===", ((strlen($decoded)+3)%4));
+    $base64 = strtr($string, '-_~', '+/=');
+    $base64 .= substr("===", ((strlen($base64)+3)%4));
+    $decoded = base64_decode($base64);
     if ($format === self::FORMAT_JSON)
     {
       if ($type === self::TYPE_ARRAY)
