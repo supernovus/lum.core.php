@@ -7,6 +7,8 @@ namespace Lum\Loader;
  */
 trait Files
 { 
+  protected $file_cache = [];
+
   public $dirs = [];         // The directory which contains our classes.
   public $ext = '.php';      // The file extension for classes (.php)
 
@@ -61,6 +63,11 @@ trait Files
    */
   public function find_file ($raw_filename)
   {
+    if (isset($this->file_cache[$raw_filename]))
+    {
+      return $this->file_cache[$raw_filename];
+    }
+
     $search_names = [$raw_filename];
     if ($this->nestedNames)
     {
@@ -88,6 +95,7 @@ trait Files
         $file = $dir . '/' . $filename . $this->ext;
         if (file_exists($file))
         {
+          $this->file_cache[$raw_filename] = $file;
           return $file;
         }
       }

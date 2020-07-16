@@ -15,6 +15,11 @@ trait Namespaces
   protected $namespace = [];
 
   /**
+   * A cache for the find_class() method.
+   */
+  protected $ns_cache = [];
+
+  /**
    * If using a PSR-4 autoloader, you may need this if you want to be able
    * to have $lum->controllers->load('subsection.controller') load the
    * \MyApp\Subsection\Controller class. This is due to the case-sensitive
@@ -53,10 +58,15 @@ trait Namespaces
     return isset($class);
   }
 
-  public function find_class ($classname)
+  public function find_class ($full_classname)
   {
+    if (isset($this->ns_cache[$full_classname]))
+    {
+      return $this->ns_cache[$full_classname];
+    }
+
     // Replace '.' with '\\' for nested module names.
-    $classnames = $this->get_classnames($classname);
+    $classnames = $this->get_classnames($full_classname);
     foreach ($this->namespace as $ns)
     {
       foreach ($classnames as $classname)
@@ -64,6 +74,7 @@ trait Namespaces
         $class = $ns . "\\" . $classname;
         if (class_exists($class))
         {
+          $this->ns_cache[$full_classname] = $class;
           return $class;
         }
       }
