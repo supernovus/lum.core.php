@@ -345,17 +345,7 @@ class Url
     {
       throw new \Exception("Unrecognized format in URL::encodeObject()");
     }
-    $base64 = base64_encode($encoded);
-    if ($useTildes)
-    {
-      $base64 = strtr($base64, '+/=', '-_~');
-    }
-    else
-    {
-      $base64 = strtr($base64, '+/', '-_');
-      $base64 = str_replace('=', '', $base64);
-    }
-    return $base64;
+    return \Lum\Encode\Safe64::encode($encoded, $useTildes);
   }
 
   /**
@@ -395,9 +385,7 @@ class Url
   public static function decodeObject ($string, $format=0, $type=0)
   {
 #    error_log("decodeObject(string, $format, $type)");
-    $base64 = strtr($string, '-_~', '+/=');
-    $base64 .= substr("===", ((strlen($base64)+3)%4));
-    $decoded = base64_decode($base64);
+    $decoded = \Lum\Encode\Safe64::decode($string);
     if ($format === self::FORMAT_JSON)
     {
       if ($type === self::TYPE_ARRAY)
