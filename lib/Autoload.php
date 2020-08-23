@@ -147,7 +147,17 @@ class Autoload
     {
       $instance = static::getInstance();
       spl_autoload_unregister([$instance, 'loadClass']);
+      static::$psr4_autoload = false;
     }
+  }
+
+  /**
+   * Unregister both.
+   */
+  public static function unregister ()
+  {
+    static::unregister_spl();
+    static::unregister_psr4();
   }
 
   /**
@@ -159,6 +169,7 @@ class Autoload
     {
       static::$instance = new static();
     }
+    return static::$instance;
   }
 
   protected function __construct () {}
