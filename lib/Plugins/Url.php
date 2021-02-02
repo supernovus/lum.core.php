@@ -168,7 +168,7 @@ class Url
   /** 
    * Return the current URL (full URL path)
    */
-  public function current_url ()
+  public static function current_url ()
   {
     return static::site_url() . static::request_uri();
   }
@@ -178,7 +178,7 @@ class Url
    *
    * @param Bool $full   If set to True, return the full path.
    */
-  public function script_name ($full=False)
+  public static function script_name ($full=False)
   {
     if ($full)
     {
