@@ -42,7 +42,7 @@ class Client
    */
   public static function is_ie ($ua=null)
   {
-    if (!isset($ua))
+    if (!isset($ua) && isset($_SERVER['HTTP_USER_AGENT']))
     {
       $ua = $_SERVER['HTTP_USER_AGENT'];
     }
@@ -60,7 +60,7 @@ class Client
    */
   public static function get_ie_ver ($ua=null)
   {
-    if (!isset($ua))
+    if (!isset($ua) && isset($_SERVER['HTTP_USER_AGENT']))
     {
       $ua = $_SERVER['HTTP_USER_AGENT'];
     }
