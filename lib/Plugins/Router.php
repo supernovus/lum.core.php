@@ -539,6 +539,7 @@ class Router
           'method'         => $method,
           'body_text'      => $body_text,
           'files'          => $files,
+          'remote_ip'      => $_SERVER['REMOTE_ADDR'],
         ]);
 
         return $context;
@@ -557,6 +558,7 @@ class Router
         'path'           => $path,
         'request_params' => $_REQUEST,
         'method'         => $method,
+        'remote_ip'      => $_SERVER['REMOTE_ADDR'],
       ]);
 
       return $context;
@@ -761,6 +763,9 @@ class Router
       $route = $context->route;
       if ($this->log && $route->name)
         error_log("Dispatching to {$route->name}");
+
+      if ($this->log && $this->debug['routing'] > 0)
+        error_log(" :ip => ".$context->remote_ip);
 
       if ($route->redirect)
       { // Whether we redirect to a URL, or go to a known route,
@@ -1146,6 +1151,7 @@ class RouteContext implements \ArrayAccess
   public $method;              // The HTTP method used.
   public $files;               // Any files uploaded.
   public $offset_files = true; // Include files in offset* methods.
+  public $remote_ip;
 
   // Convert this into a simple array structure.
   public function to_array ($opts=[])
