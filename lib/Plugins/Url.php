@@ -264,14 +264,25 @@ class Url
       $filesize = filesize($file);   // Get the filesize.
     }
 
-    header('Content-Description: File Transfer');
-    header("Content-Type: $type;" . 'name="' . $filename . '"');
-    header('Content-Disposition: attachment; filename="'.$filename.'"');
-    header('Content-Transfer-Encoding: binary');
-    header('Expires: 0');
-    header('Cache-Control: must-revalidate');
-    header("Content-Length: $filesize");
-    ob_clean();
+    $inline = isset($opts['inline']) ? (bool)$opts['inline'] : false;
+
+    if ($inline)
+    {
+      header('Content-Type: $type');
+    }
+    else
+    {
+      header('Content-Description: File Transfer');
+      header("Content-Type: $type;" . 'name="' . $filename . '"');
+      header('Content-Disposition: attachment; filename="'.$filename.'"');
+      header('Content-Transfer-Encoding: binary');
+      header('Expires: 0');
+      header('Cache-Control: must-revalidate');
+      header("Content-Length: $filesize");
+    }
+
+    if (ob_get_level() > 0)
+      ob_clean();
     flush();
 
     if (isset($opts['content']))
