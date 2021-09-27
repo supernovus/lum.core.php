@@ -13,9 +13,6 @@ class RouterException extends \Lum\Exception {}
  * Matches routes based on rules.
  */
 
-// The recognized HTTP methods.
-const ROUTE_METHODS = ['GET','POST','PUT','DELETE','HEAD','PATCH','POKE','OPTIONS'];
-
 const JSON_TYPE = 'application/json';
 const XML_TYPE  = 'application/xml';
 
@@ -26,6 +23,12 @@ class Router
   protected $default;      // The default route, must be explicitly set.
 
   protected $plugins = []; // Router plugin functions.
+
+  public $route_methods = 
+  [
+    'GET','POST','PUT','DELETE','HEAD','PATCH','POKE',
+    'OPTIONS','CLEAN','UNDELETE',
+  ];
 
   public $base_uri = '';
 
@@ -273,11 +276,11 @@ class Router
       // If the third parameter is a string or array, it's allowed methods.
       if (!is_bool($add_it))
       {
-        if (is_string($add_it) && in_array($add_it, ROUTE_METHODS))
+        if (is_string($add_it) && in_array($add_it, $this->route_methods))
         { // It's an HTTP method.
           $ropts['methods'] = [$add_it];
         }
-        elseif (is_array($add_it) && in_array($add_it[0], ROUTE_METHODS))
+        elseif (is_array($add_it) && in_array($add_it[0], $this->route_methods))
         { // It's a list of route methods.
           $ropts['methods'] = $add_it;
         }
@@ -1110,11 +1113,12 @@ class Route
     // If the third parameter is a string or array, it's allowed methods.
     if (!is_bool($rechain))
     {
-      if (is_string($rechain) && in_array($rechain, ROUTE_METHODS))
+      $meths = $this->parent->route_methods;
+      if (is_string($rechain) && in_array($rechain, $meths))
       {
         $ropts['methods'] = [$rechain];
       }
-      elseif (is_array($rechain) && in_array($rechain[0], ROUTE_METHODS))
+      elseif (is_array($rechain) && in_array($rechain[0], $meths))
       {
         $ropts['methods'] = $rechain;
       }
