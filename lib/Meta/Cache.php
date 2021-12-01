@@ -56,4 +56,35 @@ trait Cache
       }
     }
   }
+
+  protected function load_cache($key)
+  {
+    $core = \Lum\Core::getInstance();
+    if (isset($core->sess, $core->sess[$key]))
+    {
+      $this->_lum_cache = $core->sess[$key];
+    }
+  }
+
+  protected function save_cache($key)
+  {
+    $core = \Lum\Core::getInstance();
+    if (isset($core->sess, $this->_lum_cache))
+    {
+      $core->sess[$key] = $this->_lum_cache;
+    }
+  }
+
+  protected function clear_cache($disable=false)
+  {
+    if ($disable)
+    { // Unset the property entirely.
+      unset($this->_lum_cache);
+    }
+    else
+    { // Just set it to an empty array.
+      $this->_lum_cache = [];
+    }
+  }
+
 }
