@@ -29,12 +29,16 @@ class Output
     }
   }
 
-  public static function nocache ($addExpires=false)
+  public static function nocache ($expires=false)
   {
     header('Cache-Control: no-cache, must-revalidate');
-    if ($addExpires)
+    if ($expires)
     {
-      header('Expires: Thu, 22 Jun 2000 18:45:00 GMT');
+      if (!is_string($expires))
+      { // Use a default that is well expired.
+        $expires = 'Thu, 22 Jun 2000 18:45:00 GMT';
+      }
+      header("Expires: $expires");
     }
   }
 

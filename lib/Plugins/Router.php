@@ -3,21 +3,19 @@
 namespace Lum\Plugins;
 
 /**
- * A custom Exception for Router errors.
- */
-class RouterException extends \Lum\Exception {}
-
-/**
  * Routing Dispatcher.
  * 
  * Matches routes based on rules.
  */
 
-const JSON_TYPE = 'application/json';
-const XML_TYPE  = 'application/xml';
-
 class Router
 {
+  const JSON_TYPE = 'application/json';
+  const XML_TYPE  = 'application/xml';
+
+  const FORM_URLENC = "application/x-www-form-urlencoded";
+  const FORM_DATA   = "multipart/form-data";
+
   protected $routes = [];  // A flat list of routes.
   protected $named  = [];  // Any named routes, for reverse generation.
   protected $default;      // The default route, must be explicitly set.
@@ -425,24 +423,44 @@ class Router
     $this->add($def, $is_default);
   }
 
+  public function requestUri($stripBase=false, $trimSlashes=false)
+  {
+    $uri = $_SERVER['REQUEST_URI'];
+    if (($pos = strpos($uri, '?')) !== False)
+    {
+      $uri = substr($uri, 0, $pos);
+    }
+    if ($stripBase && trim($this->base_uri) != '')
+    {
+      $uri = str_replace($this->base_uri, '', $uri);
+    }
+    if ($trimSlashes)
+    {
+      $uri = trim($uri, '/');
+    }
+    return $uri;
+  }
+
+  public function requestPaths($stripBase=false, $trimSlashes=false)
+  {
+    return explode('/', $this->requestUri($stripBase, $trimSlashes));
+  }
+
   /**
    * See if we can match a route against a URI and method.
    *
    * Returns a RouteContext object.
    *
    * If there is no default controller specified, and no route matches,
-   * it will return Null.
+   * it will return nothing (void).
    */
   public function match ($uri=Null, $method=Null)
   {
     if (is_null($uri))
     {
-      $uri = $_SERVER['REQUEST_URI'];
-      if (($pos = strpos($uri, '?')) !== False)
-      {
-        $uri = substr($uri, 0, $pos);
-      }
+      $uri = $this->requestUri();
     }
+
     if (is_null($method))
     { // Use the current request method.
       $method = $_SERVER['REQUEST_METHOD'];
@@ -454,98 +472,24 @@ class Router
 
     $path = explode('/', $uri);
 
+    // Common opts we'll include in any RouteContext object.
+    $contextOpts =
+    [
+      'uri'    => $uri,
+      'path'   => $path,
+      'method' => $method,
+    ];
+
     foreach ($this->routes as $route)
     {
       $routeinfo = $route->match($uri, $method);
 
       if (isset($routeinfo))
-      {
-        $files = $request = null;
-        $ct = trim(explode(';', $_SERVER['CONTENT_TYPE'])[0]);
-#        error_log("ct: $ct");
-        $form1 = "application/x-www-form-urlencoded";
-        $form2 = "multipart/form-data";
-        if ($method == 'PUT' && ($ct == $form1 || $ct == $form2))
-        { // PUT is handled different by PHP, thanks guys.
-          $body = file_get_contents("php://input");
-          if ($ct == $form1)
-          {
-            parse_str($body, $request);
-          }
-          else
-          {
-            list($request, $files) = $this->parse_multipart($body);
-            if ($this->populate_put_global)
-            {
-              $GLOBALS['_PUT'] = $request;
-            }
-            if ($this->populate_put_files)
-            {
-              foreach ($files as $name => $spec)
-              {
-                if (!isset($_FILES[$name]))
-                  $_FILES[$name] = $spec;
-              }
-            }
-          }
-        }
-        elseif ($route->strict)
-        {
-          if ($method == 'GET' && isset($_GET))
-          {
-            $request = $_GET;
-          }
-          elseif ($method == 'POST' && isset($_POST))
-          {
-            $request = $_POST;
-            $files   = $_FILES;
-          }
-          else
-          {
-            $request = $_REQUEST;
-            $files   = $_FILES;
-          }
-        }
-        else
-        {
-          $request = $_REQUEST;
-          $files   = $_FILES;
-        }
+      { // We found a matching route.
 
-        // Let's get the body params if applicable.
-        if ($this->isJSON())
-        {
-          $body_params = json_decode(file_get_contents("php://input"), true);
-        }
-        else
-        {
-          $body_params = [];
-        }
-
-        if ($this->isXML())
-        {
-          $body_text = file_get_contents("php://input");
-        }
-        else
-        {
-          $body_text = null;
-        }
-
-        $context = new RouteContext(
-        [
-          'router'         => $this,
-          'route'          => $route,
-          'path'           => $path,
-          'request_params' => $request,
-          'path_params'    => $routeinfo,
-          'body_params'    => $body_params,
-          'method'         => $method,
-          'body_text'      => $body_text,
-          'files'          => $files,
-          'remote_ip'      => $_SERVER['REMOTE_ADDR'],
-        ]);
-
-        return $context;
+        $contextOpts['route']       = $route;
+        $contextOpts['path_params'] = $routeinfo; 
+        return $this->getContext($contextOpts);
 
       } // if ($routeinfo)
     } // foreach ($routes)
@@ -554,19 +498,109 @@ class Router
     // Let's send the default route.
     if (isset($this->default))
     {
-      $context = new RouteContext(
-      [
-        'router'         => $this,
-        'route'          => $this->default,
-        'path'           => $path,
-        'request_params' => $_REQUEST,
-        'method'         => $method,
-        'remote_ip'      => $_SERVER['REMOTE_ADDR'],
-      ]);
-
-      return $context;
+      $contextOpts['route'] = $this->default;
+      return $this->getContext($contextOpts);
     }
   } // function match()
+
+  public function getContext($opts=[])
+  {
+    $files = $request = null;
+    $ct = $this->contentType();
+
+    if (isset($opts['path']))
+    { 
+      if (is_string($opts['path']))
+      { // The URI was set in the place of the path.
+        if (!isset($opts['path']))
+          $opts['uri'] = $opts['path'];
+        $opts['path'] = explode('/', $opts['uri']);
+      }
+      elseif (!is_array($opts['path']))
+      { // It was boolean or something else, use uriPaths().
+        $opts['path'] = $this->uriPaths();
+      }
+    }
+
+    if (!isset($opts['method']))
+    { // Wasn't set, use the current request method.
+      $opts['method'] = $_SERVER['REQUEST_METHOD'];
+    }
+
+    $method = $opts['method'];
+
+    if ($method == 'PUT' && 
+      ($ct == static::FORM_URLENC || $ct == static::FORM_DATA))
+    { // PUT is handled different by PHP, thanks guys.
+      $body = file_get_contents("php://input");
+
+      if ($ct == static::FORM_URLENC)
+      { // At least they made this somewhat easy.
+        parse_str($body, $request);
+      }
+      else
+      { // This on the other hand...
+        list($request, $files) = $this->parse_multipart($body);
+        if ($this->populate_put_global)
+        {
+          $GLOBALS['_PUT'] = $request;
+        }
+        if ($this->populate_put_files)
+        {
+          foreach ($files as $name => $spec)
+          {
+            if (!isset($_FILES[$name]))
+              $_FILES[$name] = $spec;
+          }
+        }
+      }
+    }
+    elseif (isset($opts['route']) && $opts['route']->strict)
+    { // Strict-mode.
+      if ($method == 'GET' && isset($_GET))
+      {
+        $request = $_GET;
+      }
+      elseif ($method == 'POST' && isset($_POST))
+      {
+        $request = $_POST;
+        $files   = $_FILES;
+      }
+      else
+      {
+        $request = $_REQUEST;
+        $files   = $_FILES;
+      }
+    }
+    else
+    {
+      $request = $_REQUEST;
+      $files   = $_FILES;
+    }
+
+    if ($this->isJSON())
+    { // Add the JSON body params.
+      $opts['body_params'] = 
+        json_decode(file_get_contents("php://input"), true);
+    }
+
+    if ($this->isXML())
+    {
+      $opts['body_text'] = file_get_contents("php://input");
+    }
+
+    $opts = array_merge($opts,
+    [
+      'router'         => $this,
+      'request_params' => $request,
+      'files'          => $files,
+      'remote_ip'      => $_SERVER['REMOTE_ADDR'],
+    ]);
+
+    $context = new RouteContext($opts);
+
+    return $context;
+  }
 
   public function parse_multipart ($raw_body)
   {
@@ -639,12 +673,12 @@ class Router
 
   public function isJSON ()
   {
-    return $this->isContentType(JSON_TYPE, false);
+    return $this->isContentType(static::JSON_TYPE, false);
   }
 
   public function isXML ()
   {
-    return $this->isContentType(XML_TYPE, false);
+    return $this->isContentType(static::XML_TYPE, false);
   }
 
   public function isContentType ($wanttype, $forcelc=true)
@@ -738,7 +772,7 @@ class Router
    */
   public function acceptsJSON ()
   {
-    return $this->accepts(JSON_TYPE);
+    return $this->accepts(static::JSON_TYPE);
   }
 
   /**
@@ -749,7 +783,7 @@ class Router
    */
   public function acceptsXML ()
   {
-    return $this->accepts(XML_TYPE);
+    return $this->accepts(static::XML_TYPE);
   }
 
   /**
@@ -899,6 +933,11 @@ class Router
   }
 
 }
+
+/**
+ * A custom Exception for Router errors.
+ */
+class RouterException extends \Lum\Exception {}
 
 /**
  * A shared trait offering a really simple constructor.
@@ -1145,8 +1184,15 @@ class RouteContext implements \ArrayAccess
 {
   use RouteConstructor;
 
+  const ROUTER_METHODS =
+  [
+    'requestUri', 'requestPaths', 'isJSON', 'isXML', 'isContentType',
+    'contentType', 'accept', 'accepts', 'acceptsJSON', 'acceptsXML',
+  ];
+
   public $router;              // The router object.
   public $route;               // The route object.
+  public $uri            = []; // The URI string (without query string.)
   public $path           = []; // The URI path elements.
   public $request_params = []; // The $_REQUEST, $_GET or $_POST data.
   public $path_params    = []; // Parameters specified in the URI.
@@ -1230,41 +1276,6 @@ class RouteContext implements \ArrayAccess
     return \Lum\File::getUpload($name, $this);
   }
 
-  public function isJSON ()
-  {
-    return $this->router->isJSON();
-  }
-
-  public function isXML ()
-  {
-    return $this->router->isXML();
-  }
-
-  public function acceptsJSON ()
-  {
-    return $this->router->acceptsJSON();
-  }
-
-  public function acceptsXML ()
-  {
-    return $this->router->acceptsXML();
-  }
-
-  public function accepts ($mimetype=null)
-  {
-    return $this->router->accepts($mimetype);
-  }
-
-  public function isContentType ($contentType)
-  {
-    return $this->router->isContentType($contentType);
-  }
-
-  public function contentType ($withOpts=false)
-  {
-    return $this->router->contentType($withOpts);
-  }
-
   public function jsonBody ()
   {
     if ($this->router->isJSON())
@@ -1278,6 +1289,19 @@ class RouteContext implements \ArrayAccess
     if ($this->router->isXML())
     {
       return $this->body_text;
+    }
+  }
+
+  // Add a handful of Router methods to the RouteContext objects.
+  public function __call($name, $args)
+  {
+    if (isset($this->router) && in_array($name, static::ROUTER_METHODS))
+    { // There's a valid Router and callable method in it, go there.
+      return call_user_func_array([$this->router, $name], $args);
+    }
+    else
+    {
+      throw new RouterException("No such method '$name' in RouteContext");
     }
   }
 
