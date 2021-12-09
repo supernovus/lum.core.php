@@ -10,6 +10,8 @@ namespace Lum\Plugins;
 
 class Router
 {
+  use \Lum\Meta\SetProps;
+
   const JSON_TYPE = 'application/json';
   const XML_TYPE  = 'application/xml';
 
@@ -40,7 +42,9 @@ class Router
     'building' => 0,
   ];
 
-  public $default_filter = "([\w\-\~\.]+)"; // Used by default.
+  public $default_filter = RouteType::DEFAULT_FILTER;
+
+  public $default_placeholder = RouteType::CLASSIC_PLACEHOLDER;
 
   public $current; // The most recently matched route context.
 
@@ -67,14 +71,13 @@ class Router
       $this->auto_prefix();
     }
 
-    if (isset($opts['populate_put_files']))
-    {
-      $this->populate_put_files = (bool)$opts['populate_put_files'];
-    }
-    if (isset($opts['populate_put_global']))
-    {
-      $this->populate_put_global = (bool)$opts['populate_put_global'];
-    }
+    $this->set_props($opts, true, 
+    [
+      'populate_put_files',
+      'populate_put_global',
+      'default_filter',
+      'default_placeholder',
+    ]);
 
     if (isset($opts['extend']) && $opts['extend'])
     { // Register some helpers into the Lum object.
@@ -934,23 +937,49 @@ class Router
 
 }
 
+class RouteType
+{
+  const CLASSIC_PLACEHOLDER = "/:([\w-]+)/";     // -> /some/:var/:name
+  const MODERN_PLACEHOLDER  = "/\{([\w-]+)\}/";  // -> /some/{var}/{name}
+
+  const DEFAULT_FILTER = "([\w\-\~\.]+)";   // Match common characters.
+  const UNSIGNED_INT   = "(\d+)";           // Positive integers.
+  const SIGNED_INT     = "([+-]?\d+)";      // Positive and negative integers.
+
+  // TODO: more filter types.
+
+  const PLACEHOLDERS =
+  [
+    'classic' => self::CLASSIC_PLACEHOLDER,
+    'modern'  => self::MODERN_PLACEHOLDER,
+  ];
+
+  const FILTERS = 
+  [
+    'default'  => self::DEFAULT_FILTER,
+    'uint'     => self::UNSIGNED_INT,
+    'int'      => self::SIGNED_INT,
+  ];
+}
+
 /**
  * A custom Exception for Router errors.
  */
 class RouterException extends \Lum\Exception {}
 
 /**
+ * A shared trait for 
+
+/**
  * A shared trait offering a really simple constructor.
  */
 Trait RouteConstructor
 {
+  use \Lum\Meta\SetProps;
+
   public function __construct ($opts=[])
   {
-    foreach (get_object_vars($this) as $field => $default)
-    {
-      if (isset($opts[$field]))
-        $this->$field = $opts[$field];
-    }
+    $this->set_props($opts);
   }
 }
 
@@ -982,13 +1011,35 @@ class Route
 
   public $redirect_is_route = False;                 // Redirect to a route?
 
+  protected $placeholder_regex;                      // Custom placeholders?
   protected $filters = [];                           // Parameter filters.
+
+  public function getPlaceholder()
+  {
+    if (isset($this->placeholder_regex) && is_string($this->placeholder_regex))
+    {
+      $placeholder = $this->placeholder_regex;
+    }
+    else
+    {
+      $placeholder = $this->parent->default_placeholder;
+    }
+
+    if (isset(RouteType::PLACEHOLDERS[$placeholder]))
+    { // It's the name of a pre-defined placeholder class.
+      return RouteType::PLACEHOLDERS[$placeholder];
+    }
+    else
+    { // Assume it's the placeholder regex itself.
+      return $placeholder;
+    }
+  }
 
   protected function uri_regex ()
   {
     return preg_replace_callback
     (
-      "/:([\w-]+)/", 
+      $this->getPlaceholder(), 
       [$this, 'substitute_filter'], 
       $this->uri
     );
@@ -996,9 +1047,20 @@ class Route
 
   protected function substitute_filter ($matches)
   {
-    if (isset($matches[1]) && isset($this->filters[$matches[1]]))
-    {
-      return $this->filters[$matches[1]];
+    if (isset($matches, $matches[1]))
+    { // There's a variable name.
+      if (isset($this->filters[$matches[1]]))
+      { // A filter specifically for this variable.
+        $filter = $this->filters[$matches[1]];
+        if (isset(RouteType::FILTERS[$filter]))
+        { // It was the name of a pre-defined filter class.
+          return RouteType::FILTERS[$filter];
+        }
+        else
+        { // Assume it's the filter itself.
+          return $filter;
+        }
+      }
     }
     return $this->parent->default_filter; // The default filter.
   }
@@ -1038,11 +1100,12 @@ class Route
     if ($debug > 1)
       error_log(" -- Accepts matched.");
 
-    if ($this->parent->base_uri || $this->uri_regex())
+    $matchUri = $this->uri_regex();
+    if ($this->parent->base_uri || $matchUri)
     {
       $match = "@^"
              . $this->parent->base_uri
-             . $this->uri_regex()
+             . $matchUri
              . "*$@i";
 
       if ($debug > 2)
@@ -1055,8 +1118,9 @@ class Route
       error_log(" -- Route matched.");
 
     $params = [];
+    $placeholder = $this->getPlaceholder();
 
-    if (preg_match_all("/:([\w-]+)/", $this->uri, $argument_keys))
+    if (preg_match_all($placeholder, $this->uri, $argument_keys))
     {
       $argument_keys = $argument_keys[1];
       foreach ($argument_keys as $key => $name)
@@ -1079,15 +1143,17 @@ class Route
   {
     $uri = $this->uri;
 
+    $placeholder = $this->getPlaceholder();
+
     // First, we replace any sent parameters.
-    if ($params && preg_match_all("/:([\w-]+)/", $uri, $param_keys))
+    if ($params && preg_match_all($placeholder, $uri, $param_keys))
     {
       $param_keys = $param_keys[1];
       foreach ($param_keys as $key)
       {
         if (isset($params[$key]))
         {
-          $uri = preg_replace("/:([\w-]+)/", $params[$key], $uri, 1);
+          $uri = preg_replace($placeholder, $params[$key], $uri, 1);
         }
       }
     }
@@ -1096,7 +1162,7 @@ class Route
     // a problem, and cannot continue.
     // Pass ['strict'=>False] to make this non-fatal.
     $strict = isset($opts['strict']) ? $opts['strict'] : True;
-    if (preg_match_all("/:([\w-]+)/", $uri, $not_found))
+    if (preg_match_all($placeholder, $uri, $not_found))
     {
       $not_found = $not_found[1];
       $not_found = join(', ', $not_found);
