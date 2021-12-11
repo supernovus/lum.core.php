@@ -12,9 +12,7 @@
   ],
   "require":
   {
-    "php": "^7.0 || ^8.0",
-    "ext-json": "*",
-    "ralouphie/getallheaders": "^3.0",
+    "lum/lum-compat": "^1.0",
     "lum/lum-file": "^1.4.0",
     "lum/lum-encode": "^1.1.3",
     "lum/lum-arrays": "^1.0.3"
