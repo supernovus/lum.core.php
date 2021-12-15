@@ -41,55 +41,55 @@ abstract class Arrayish extends Obj
   }
 
   // Iterator interface.
-  public function current ()
+  public function current (): mixed
   {
     return current($this->data);
   }
 
-  public function key ()
+  public function key (): mixed
   {
     return key($this->data);
   }
 
-  public function next ()
+  public function next (): void
   {
-    return next($this->data);
+    next($this->data);
   }
 
-  public function rewind ()
+  public function rewind (): void
   {
-    return reset($this->data);
+    reset($this->data);
   }
 
-  public function valid ()
+  public function valid (): bool
   {
     return key($this->data) !== NULL;
   }
 
   // ArrayAccess Interface.
-  public function offsetExists ($offset)
+  public function offsetExists ($offset): bool
   {
     return array_key_exists($offset, $this->data);
   }
 
-  public function offsetGet ($offset)
+  public function offsetGet ($offset): mixed
   {
     if (isset($this->data[$offset]))
       return $this->data[$offset];
   }
 
-  public function offsetSet ($offset, $value)
+  public function offsetSet ($offset, $value): void
   {
     $this->data[$offset] = $value;
   }
 
-  public function offsetUnset ($offset)
+  public function offsetUnset ($offset): void
   {
     unset($this->data[$offset]);
   }
 
   // Countable interface.
-  public function count ()
+  public function count (): int
   {
     return count($this->data);
   }

@@ -299,7 +299,7 @@ class Core implements \ArrayAccess
   /**
    * Does the option exist?
    */
-  public function offsetExists ($path)
+  public function offsetExists ($path): bool
   {
     $get = $this->offsetGet($path);
     if (isset($get))
@@ -311,7 +311,7 @@ class Core implements \ArrayAccess
   /**
    * Set an option.
    */
-  public function offsetSet ($path, $value)
+  public function offsetSet ($path, $value): void
   {
     $tree = explode('.', $path);
     $data = &$this->opts;
@@ -328,7 +328,7 @@ class Core implements \ArrayAccess
   /**
    * Unset an option.
    */
-  public function offsetUnset ($path)
+  public function offsetUnset ($path): void
   {
     $tree = explode('.', $path);
     $data = &$this->opts;
@@ -346,7 +346,7 @@ class Core implements \ArrayAccess
   /**
    * Get an option based on a path.
    */
-  public function offsetGet ($path)
+  public function offsetGet ($path): mixed
   {
     $find = explode('.', $path);
     $data = $this->opts;

@@ -173,7 +173,7 @@ abstract class Container extends Arrayish
   }
 
   // We override ArrayAccess to use $this->data_index for its source.
-  public function offsetExists ($offset)
+  public function offsetExists ($offset): bool
   {
     if (!is_string($offset) && !is_int($offset))
     {
@@ -183,13 +183,13 @@ abstract class Container extends Arrayish
     return array_key_exists($offset, $this->data_index);
   }
 
-  public function offsetGet ($offset)
+  public function offsetGet ($offset): mixed
   {
     if (isset($this->data_index[$offset]))
       return $this->data_index[$offset];
   }
 
-  public function offsetSet ($offset, $value)
+  public function offsetSet ($offset, $value): void
   {
     $index = $this->get_data_index($offset);
     if (isset($index))
@@ -199,7 +199,7 @@ abstract class Container extends Arrayish
     $this->data_index[$offset] = $value;
   }
 
-  public function offsetUnset ($offset)
+  public function offsetUnset ($offset): void
   {
     $index = $this->get_data_index($offset);
     if (isset($index))

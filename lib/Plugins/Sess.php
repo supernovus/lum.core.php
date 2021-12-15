@@ -26,22 +26,22 @@ class Sess implements \ArrayAccess
     }
   }
 
-  public function offsetSet ($id, $value)
+  public function offsetSet ($id, $value): void
   {
     $_SESSION[$id] = $value;
   }
 
-  public function offsetGet ($id)
+  public function offsetGet ($id): mixed
   {
     return $_SESSION[$id];
   }
 
-  public function offsetExists ($id)
+  public function offsetExists ($id): bool
   {
     return isset($_SESSION[$id]);
   }
 
-  public function offsetUnset($id)
+  public function offsetUnset($id): void
   {
     unset($_SESSION[$id]);
   }

@@ -1279,7 +1279,7 @@ class RouteContext implements \ArrayAccess
     return $array;
   }
 
-  public function offsetGet ($offset)
+  public function offsetGet ($offset): mixed
   {
     if (array_key_exists($offset, $this->path_params))
     {
@@ -1303,12 +1303,12 @@ class RouteContext implements \ArrayAccess
     }
   }
 
-  public function offsetSet ($offset, $value)
+  public function offsetSet ($offset, $value): void
   {
     throw new RouterException ("Context parameters are read only.");
   }
 
-  public function offsetExists ($offset)
+  public function offsetExists ($offset): bool
   {
     if (array_key_exists($offset, $this->path_params))
     {
@@ -1332,7 +1332,7 @@ class RouteContext implements \ArrayAccess
     }
   }
 
-  public function offsetUnset ($offset)
+  public function offsetUnset ($offset): void
   {
     throw new RouterException ("Cannot unset a context parameter.");
   }
