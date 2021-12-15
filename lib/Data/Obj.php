@@ -307,7 +307,7 @@ abstract class Obj implements \JsonSerializable
   // The JsonSerializable interface allows us to pass Data Objects
   // directly to json_encode(). This takes no options, so any advanced
   // usage should probably call to_array() or to_json() directly.
-  public function jsonSerialize ()
+  public function jsonSerialize (): mixed
   {
     return $this->to_array();
   }

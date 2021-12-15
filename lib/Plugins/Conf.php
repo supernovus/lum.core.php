@@ -508,7 +508,7 @@ class Conf extends \Lum\Data\Arrayish
    *
    * @throws  InvalidArgumentException if the identifier is not defined.
    */
-  public function offsetGet ($id)
+  public function offsetGet ($id): mixed
   {
     if (!array_key_exists($id, $this->data))
     {
@@ -538,7 +538,7 @@ class Conf extends \Lum\Data\Arrayish
    *
    * @return Boolean
    */
-  public function offsetExists ($id) 
+  public function offsetExists ($id): bool
   {
     if (!array_key_exists($id, $this->data) && isset($this->autoload_dir)
       && $this->autoload($id))
