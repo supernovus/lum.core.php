@@ -2,6 +2,8 @@
 
 namespace Lum\Data;
 
+use \Lum\Exception;
+
 /** 
  * Data Object -- Base class for all Lum\Data classes.
  *
@@ -43,7 +45,7 @@ namespace Lum\Data;
  */
 abstract class Obj implements \JsonSerializable
 {
-  use \Lum\Meta\ClassInfo, JSON;
+  use \Lum\Meta\ClassInfo, JSON, OutputXML, InputXML, BuildXML, DetectType;
 
   protected $parent;             // Will be set if we have a parent object.
   protected $data       = [];    // The actual data we represent.
@@ -182,17 +184,17 @@ abstract class Obj implements \JsonSerializable
 #        error_log("Retreived: ".json_encode($return));
         if ($return === False)
         {
-          throw new \Exception("Could not load data.");
+          throw new Exception("Could not load data.");
         }
       }
       else
       {
-        throw new \Exception("Could not handle data type.");
+        throw new Exception("Could not handle data type.");
       }
     }
     else
     {
-      throw new \Exception("Unsupported data type.");
+      throw new Exception("Unsupported data type.");
     }
     return $return;
   }
@@ -231,53 +233,6 @@ abstract class Obj implements \JsonSerializable
     return $copy;
   }
 
-  // Default version of detect_data_type().
-  // Feel free to override it, and even call it using parent.
-  protected function detect_data_type ($data)
-  {
-    if (is_array($data))
-    {
-      return 'array';
-    }
-    elseif (is_string($data))
-    {
-      return $this->detect_string_type($data);
-    }
-    elseif (is_object($data))
-    {
-      if ($data instanceof \SimpleDOM)
-      {
-        return 'simple_dom';
-      }
-      elseif ($data instanceof \SimpleXMLElement)
-      {
-        return 'simple_xml';
-      }
-      elseif ($data instanceof \DOMNode)
-      {
-        return 'dom_node';
-      }
-    }
-  }
-
-  // Detect the type of string being loaded.
-  // This is very simplistic, you may want to override it.
-  // It currently supports JSON strings starting with { and [
-  // and XML strings starting with <. You'll need to implement
-  // a load_xml_string() method if you want XML strings to work.
-  protected function detect_string_type ($string)
-  {
-    $fc = substr(trim($string), 0, 1);
-    if ($fc == '<')
-    { // XML detected.
-      return 'xml_string';
-    }
-    elseif ($fc == '[' || $fc == '{')
-    { // JSON detected.
-      return 'json';
-    }
-  }
-
   // This is very (VERY) cheap. Override as needed.
   public function load_array ($array, $opts=Null)
   {
@@ -304,13 +259,6 @@ abstract class Obj implements \JsonSerializable
     return $this->data;
   }
 
-  // The JsonSerializable interface allows us to pass Data Objects
-  // directly to json_encode(). This takes no options, so any advanced
-  // usage should probably call to_array() or to_json() directly.
-  public function jsonSerialize (): mixed
-  {
-    return $this->to_array();
-  }
 
   // And again, the same as above, but with YAML.
   public function to_yaml ($opts=Null)
@@ -319,168 +267,21 @@ abstract class Obj implements \JsonSerializable
   }
 
   /** 
-   * All of the XML-related methods require that you implement the
-   * load_simple_xml() and to_simple_xml() methods.
+   * The XML-related methods from the traits require that you implement the
+   * load_simple_xml() and to_simple_xml() methods. We provide default
+   * versions that don't do anything.
    */
-
-  // A protected method that can be used by your to_simple_xml()
-  // methods to decide how to create the root element.
-  // If an option of 'element' exists, and is a SimpleXML object,
-  // then it will be used directly. If it is a string, the string will
-  // be assumed to be valid XML which will be constructed into a
-  // SimpleXML object. If no 'element' option was passed, we use the
-  // default value (an XML string) to construct a new SimpleXML object.
-  protected function get_simple_xml_element ($opts)
-  {
-    if (isset($opts['element']))
-    {
-      if ($opts['element'] instanceof \SimpleXMLElement)
-      {
-        $xml = $opts['element'];
-      }
-      elseif (is_string($opts['element']))
-      {
-        $xml = new \SimpleXMLElement($opts['element']);
-      }
-      else
-      {
-        throw new \Exception("Invalid XML passed.");
-      }
-    }
-    elseif (isset($opts['parent_element']))
-    {
-      if ($opts['parent_element'] instanceof \SimpleXMLElement)
-      {
-        $parent = $opts['parent_element'];
-      }
-      elseif (is_string($opts['parent_element']))
-      {
-        $parent = new \SimpleXMLElement($opts['parent_element']);
-      }
-      else
-      {
-        throw new \Exception("Invalid parent XML passed.");
-      }
-
-      if (isset($opts['child_element']))
-      {
-        $tag = $opts['child_element'];
-      }
-      elseif (isset($opts['default_tag']))
-      {
-        $tag = $opts['default_tag'];
-      }
-      else
-      {
-        $tag = $this->get_classname();
-      }
-
-      $xml = $parent->addChild($tag);
-    }
-    elseif (isset($opts['default_element']))
-    {
-      $defxml = $opts['default_element'];
-      if ($defxml instanceof \SimpleXMLElement)
-      {
-        $xml = $defxml;
-      }
-      elseif (is_string($defxml))
-      {
-        $xml = new \SimpleXMLElement($defxml);
-      }
-      else
-      {
-        throw new \Exception("Invalid default XML passed.");
-      }
-    }
-    elseif (isset($opts['default_tag']))
-    {
-      $defxml = '<'.$opts['default_tag'].'/>';
-      $xml = new \SimpleXMLElement($defxml);
-    }
-    else
-    {
-      $defxml = '<'.$this->get_classname().'/>';
-      $xml = new \SimpleXMLElement($defxml);
-    }
-    return $xml;
-  }
 
   // Load a SimpleXML object.
   public function load_simple_xml ($simplexml, $opts=Null)
   {
-    throw new \Exception("No load_simple_xml() method defined.");
+    throw new Exception("No load_simple_xml() method defined.");
   }
 
   // Output as a SimpleXML object.
   public function to_simple_xml ($opts=Null)
   {
-    throw new \Exception("No to_simple_xml() method defined.");
-  }
-
-  // Load an XML string.
-  public function load_xml_string ($string, $opts=Null)
-  {
-    $simplexml = new \SimpleXMLElement($string);
-    return $this->load_simple_xml($simplexml, $opts);
-  }
-
-  // Load a DOMNode object.
-  public function load_dom_node ($dom, $opts=Null)
-  {
-    $simplexml = simplexml_import_dom($dom);
-    return $this->load_simple_xml($simplexml);
-  }
-
-  // Load a SimpleDOM object.
-  public function load_simple_dom ($simpledom, $opts=null)
-  { // SimpleDOM is an extension of SimpleXML, so just do it right.
-    return $this->load_simple_xml($simpledom, $opts);
-  }
-
-  // Return a DOMElement
-  public function to_dom_element ($opts=Null)
-  {
-    $simplexml = $this->to_simple_xml($opts);
-    $dom_element = dom_import_simplexml($simplexml);
-    return $dom_element;
-  }
-
-  // Return a DOMDocument
-  public function to_dom_document ($opts=Null)
-  {
-    $dom_element = $this->to_dom_element($opts);
-    $dom_document = $dom_element->ownerDocument;
-    return $dom_document;
-  }
-
-  // Return a SimpleDOM object, must have SimpleDOM library loaded first.
-  public function to_simple_dom ($opts=null)
-  {
-    if (function_exists('simpledom_import_simplexml'))
-    {
-      $simplexml = $this->to_simple_xml($opts);
-      return simpledom_import_simplexml($simplexml);
-    }
-  }
-
-  // Return an XML string.
-  public function to_xml ($opts=Null)
-  {
-    $simplexml = $this->to_simple_xml($opts);
-    $xmlstring = $simplexml->asXML();
-    if (isset($opts, $opts['reformat']) && $opts['reformat'])
-    {
-      $dom = new \DOMDocument('1.0');
-      $dom->preserveWhiteSpace = False;
-      $dom->formatOutput = True;
-      $dom->loadXML($xmlstring);
-      return $dom->saveXML();
-    }
-    else
-    {
-      return $xmlstring;
-    }
+    throw new Exception("No to_simple_xml() method defined.");
   }
 
 }

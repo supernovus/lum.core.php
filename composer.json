@@ -20,7 +20,7 @@
   "require-dev":
   {
     "lum/lum-test": "^3.0",
-    "lum/simpledom": "^2.1.2"
+    "lum/simpledom": "^2.1.2 || ^3.0"
   },
   "autoload":
   {

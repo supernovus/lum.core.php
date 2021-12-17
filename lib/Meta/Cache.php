@@ -112,7 +112,7 @@ trait Cache
     {
       $store[$key] = $this->_lum_cache;
 
-      if (is_callable([$store, 'save'])
+      if (is_callable([$store, 'save']))
       {
         $store->save();
       }
@@ -144,7 +144,7 @@ trait Cache
     { // Delete the cache from the store.
       unset($store[$key]);
 
-      if (is_callable([$store, 'save'])
+      if (is_callable([$store, 'save']))
       { 
         $store->save();
       }

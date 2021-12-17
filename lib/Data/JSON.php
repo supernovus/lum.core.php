@@ -4,6 +4,9 @@ namespace Lum\Data;
 
 trait JSON
 {
+  /**
+   * A method that must be defined to return a serialization-safe array.
+   */
   abstract public function to_array($opts=[]);
 
   /**
@@ -50,6 +53,18 @@ trait JSON
     $array = $this->to_array($opts);
 
     return json_encode($array, $flags);
+  }
+
+  /**
+   * An extremely cheap version of jsonSerialize() using to_array()
+   *
+   * You'll still need to use `implements JSONSerializable` in your class.
+   *
+   * This is the bare minimum, you may want to override it.
+   */ 
+  public function jsonSerialize (): mixed
+  {
+    return $this->to_array();
   }
 
 }

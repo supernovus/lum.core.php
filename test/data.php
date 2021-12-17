@@ -4,7 +4,7 @@ require_once 'vendor/autoload.php';
 
 $core = \Lum\Core::getInstance();
 
-$simpleDOM = function_exists('simpledom_import_simplexml');
+$simpleDOM = class_exists('\\SimpleDOM');
 
 $t = new \Lum\Test();
 
