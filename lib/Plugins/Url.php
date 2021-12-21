@@ -222,7 +222,7 @@ class Url
    * server will be used (as specified in the $file parameter.)
    *
    */
-  public static function download ($file, $opts=array())
+  public static function download (mixed $file, array $opts=[]): never
   {
     // First off, get the file type. We have a few common aliases
     // available, which may be faster than using finfo?

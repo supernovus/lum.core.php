@@ -139,6 +139,8 @@ trait SetProps
       }
     }
 
+    error_log("set_props: props = ".json_encode($props));
+
     foreach ($props as $name => $defval)
     {
       if ($ensureProp)
