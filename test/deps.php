@@ -6,6 +6,10 @@ use \Lum\Meta\HasDeps;
 
 require_once 'vendor/autoload.php';
 
+const C = 'construct';
+
+const C_PRE = '__construct_';
+
 const ANON = 'anonymous';
 const NONA = 'suomynona';
 const HI = ' says hi to ';
@@ -20,8 +24,8 @@ abstract class Base1
 
   public function __construct($opts=[])
   {
-    $dep_opts = ['prefix' => '__construct_'];
-    $this->_dep_group($dep_opts, [$opts]);
+    $dep_opts = ['prefix' => C_PRE];
+    $this->_dep_group(C, $dep_opts, [$opts]);
   }
 }
 
@@ -31,8 +35,13 @@ abstract class Base2
 
   public function __construct($opts=[])
   {
-    $dep_opts = ['deps_prop' => 'constructors', 'args'=>[$opts]];
-    $this->_dep_group($dep_opts);
+    $dep_opts = 
+    [
+      'prefix' => C_PRE,
+      'deps_prop' => 'constructors', 
+      'args' => [$opts],
+    ];
+    $this->_dep_group(C, $dep_opts);
   }
 }
 
@@ -110,7 +119,7 @@ class FooBarZap1 extends FooBar1
   public function your_mom(Foo $person, ?array $deps=null)
   {
     $dep_opts = ['postfix'=>'_your_mom', 'deps'=>$deps];
-    $this->_dep_group($dep_opts, [$person]);
+    $this->_dep_group('your_mom', $dep_opts, [$person]);
   }
 }
 
@@ -128,15 +137,14 @@ class FooBar2 extends Base2
   }
 }
 
-class FooZapShit2 extends FooBar2
+class FooZapShit2 extends Base2
 {
   use Foo, Zap, Shit;
 
   public function yourself(int $times)
   {
-    $this->needs('foo');
     $dep_opts = ['postfix'=>'_yourself'];
-    $this->_dep_group($dep_opts, [$this->name, $times]);
+    $this->_dep_group('yourself', $dep_opts, [$this->name, $times]);
   }
 }
 
@@ -150,7 +158,6 @@ class ZapBar1 extends Base1
 class Shit2 extends Base2
 {
   use Shit;
-  protected array $constructors = ['shit'];
 }
 
 $t = new \Lum\Test();
