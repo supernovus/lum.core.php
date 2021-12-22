@@ -172,11 +172,17 @@ class Dep_Groups extends \ArrayObject
 {
   public readonly object $parent;
 
-  protected ?Dep_Group $current;
+  public bool $debug = false;
+
+  protected ?Dep_Group $current = null;
 
   public function __construct (object $parent)
   {
     $this->parent = $parent;
+    if (property_exists($parent, 'debug') && is_bool($parent->debug))
+    {
+      $this->debug = $parent->debug;
+    }
     parent::__construct();
   }
 
@@ -200,7 +206,7 @@ class Dep_Groups extends \ArrayObject
    *
    * @param ?Dep_Group|string  The dep group itself, or it's id.
    */
-  public function setCurrent(Dep_Group|string|null $current): void
+  public function setCurrent(Dep_Group|string $current): void
   {
     if (is_string($current))
     { // Group id was specified.
@@ -217,6 +223,14 @@ class Dep_Groups extends \ArrayObject
     { // It was an object.
       $this->current = $current;
     }
+  }
+
+  /**
+   * Clear the current default dep group.
+   */
+  public function clearCurrent(): void
+  {
+    $this->current = null;
   }
 
   // A version of offsetGet that is fatal for non-existent groups.
@@ -242,18 +256,6 @@ class Dep_Groups extends \ArrayObject
   public function offsetSet(mixed $key, mixed $value): void
   {
     throw new Dep_Groups_Readonly();
-    /*
-    if ($this->offsetExists($key))
-    { // It's already here, no overwriting.
-      throw new Dep_Groups_Readonly();
-    }
-    if (!($value instanceof Dep_Group))
-    {
-      throw new Invalid_Dep_Group(serialize($value));
-    }
-    // Okay, we reached here, it's all good.
-    parent::offsetSet($key, $value);
-     */
   }
 
   // This is the valid only way to add new groups.
@@ -292,7 +294,14 @@ class Dep_Group
 
   public function __construct(Dep_Groups $parent, string $id, array $opts)
   {
-    error_log("Dep_Group::__construct(parent,$id,".json_encode(array_keys($opts)).")");
+    if ($parent->debug)
+    {
+      error_log("Dep_Group::__construct(parent:"
+      . get_class($parent->parent)
+      . ",'$id'," 
+      . json_encode($opts) 
+      . ")");
+    }
 
     // Set our explicit property arguments.
     $this->id = $id;
@@ -320,12 +329,30 @@ class Dep_Group
     bool $fullname, 
     bool $nofail): bool|array
   {
-    error_log("Dep_Group::run(" 
-      . json_encode([$depname,$args,$fullname,$nofail]) . ')');
+    if ($this->parent->debug)
+    {
+      $debug = 
+      [
+        'deps' => $depname,
+        'args' => $args,
+        'fullname' => $fullname,
+        'nofail' => $nofail,
+      ];
+    }
 
-    if (is_null($args))
+    if (empty($args))
     { // Use the defaults.
       $args = $this->args;
+      if (isset($debug))
+      {
+        $debug['_args'] = $debug['args'];
+        $debug['args']  = $args;
+      }
+    }
+
+    if (isset($debug))
+    {
+      error_log("Dep_Group::run(" . json_encode($debug) . ')');
     }
 
     if (is_array($depname))

@@ -31,7 +31,7 @@ class Debug
    *  flag1=1,flag2=3
    *  flag3=true,flag4=false
    *
-   * Each of the flags lwill be set as $core["debug.flagname"]
+   * Each of the flags will be set as $core["debug.flagname"]
    * for lookup manually, or via $core->debug->is().
    *
    * @param string $configfile  The config file to look for and load.
@@ -42,7 +42,7 @@ class Debug
     { // Load the debugging config file.
       $core = \Lum\Core::getInstance();
       $core_debug_conf = trim(file_get_contents($configfile));
-      $core_debug_conf = preg_split("/[\n\,]/", $core_debug_conf);
+      $core_debug_conf = preg_split("/[\n\,]+/", $core_debug_conf);
       foreach ($core_debug_conf as $core_debug_spec)
       {
         $core_debug_spec = explode('=', trim($core_debug_spec));

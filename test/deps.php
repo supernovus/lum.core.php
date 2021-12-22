@@ -18,23 +18,35 @@ const NO = 0; // Don't care about the output of the method.
 const OK = 1; // Expect the value to be something.
 const EX = 2; // Expect an exception to be thrown.
 
-abstract class Base1
+abstract class Base
+{
+  public bool $debug = false;
+  public function __construct ()
+  {
+    $core = \Lum\Core::getInstance();
+    $this->debug = $core->debug->is('test_deps');
+  }
+}
+
+abstract class Base1 extends Base
 {
   use HasDeps;
 
   public function __construct($opts=[])
   {
+    parent::__construct();
     $dep_opts = ['prefix' => C_PRE];
     $this->_dep_group(C, $dep_opts, [$opts]);
   }
 }
 
-abstract class Base2
+abstract class Base2 extends Base
 {
   use HasDeps;
 
   public function __construct($opts=[])
   {
+    parent::__construct();
     $dep_opts = 
     [
       'prefix' => C_PRE,
@@ -44,6 +56,8 @@ abstract class Base2
     $this->_dep_group(C, $dep_opts);
   }
 }
+
+interface Person {}
 
 trait Foo
 {
@@ -57,7 +71,7 @@ trait Foo
     }
   }
 
-  public function greet(Foo $person)
+  public function greet(Person $person)
   {
     return $this->name . HI . $person->name;
   }
@@ -77,16 +91,23 @@ trait Bar
 
 trait Zap
 {
-  private array $zapped = [];
+  protected array $zapped = [];
 
-  private function zap_your_mom(Foo $person)
+  protected function zap_your_mom(Person $person)
   {
-    $this->zapped[$person->name]++;
+    $name = $person->name;
+    if (isset($this->zapped[$name]))
+      $this->zapped[$name] += 1;
+    else
+      $this->zapped[$name] = 1;
   }
 
-  private function zap_yourself(string $name, int $times)
+  protected function zap_yourself(string $name, int $times)
   {
-    $this->zapped[$name] += $times;
+    if (isset($this->zapped[$name]))
+      $this->zapped[$name] += $times;
+    else
+      $this->zapped[$name] = $times;
   }
 
   public function getZapped(): array
@@ -101,7 +122,10 @@ trait Shit
 
   public function shit_yourself(string $name, int $times)
   {
-    $this->shit[$name] += $times;
+    if (isset($this->shit[$name]))
+      $this->shit[$name] += $times;
+    else
+      $this->shit[$name] = $times;
   }
 
   public function shat(): array
@@ -110,20 +134,22 @@ trait Shit
   }
 }
 
-class FooBar1 extends Base1 { use Foo, Bar; }
+class FooBar1 extends Base1 implements Person { use Foo, Bar; }
 
 class FooBarZap1 extends FooBar1
 {
   use Zap;
 
-  public function your_mom(Foo $person, ?array $deps=null)
+  public function your_mom(Person $person, ?array $deps=null)
   {
-    $dep_opts = ['postfix'=>'_your_mom', 'deps'=>$deps];
+    $dep_opts = ['postfix'=>'_your_mom'];
+    if (isset($deps))
+      $dep_opts['deps'] = $deps;
     $this->_dep_group('your_mom', $dep_opts, [$person]);
   }
 }
 
-class FooBar2 extends Base2 
+class FooBar2 extends Base2 implements Person
 { 
   use Foo, Bar; 
   protected array $constructors = ['foo'];
@@ -137,7 +163,7 @@ class FooBar2 extends Base2
   }
 }
 
-class FooZapShit2 extends Base2
+class FooZapShit2 extends Base2 implements Person
 {
   use Foo, Zap, Shit;
 
@@ -171,7 +197,7 @@ $o =
   new FooBar2(),
   new FooBar2(['more_deps'=>['bar'], 'name'=>'Sarah']),
   new FooZapShit2(),
-  new FooZapShit2(['name'=>'Mike', 'more_deps'=>['shit']]),
+  new FooZapShit2(['name'=>'Mike']),
   fn() => new ZapBar1(),
   new Shit2(['name'=>'Will']),
 ];
@@ -199,7 +225,7 @@ $m =
     [EX, 'yourself',  [10],         null],
   ],
   [ // FooBar1(Bob)
-    [OK, 'greet'      [$o[3]],      'Bob' . HI . 'Lisa'],
+    [OK, 'greet',     [$o[3]],      'Bob' . HI . 'Lisa'],
   ],
   [ // FooBarZap1()
     [OK, 'greet',     [$o[3]],      ANON . HI . 'Lisa'],
@@ -211,7 +237,7 @@ $m =
     [OK, 'greet',     [$o[5]],      'Lisa' . HI . 'Sarah'],
     [NO, 'your_mom',  [$o[5]],      null],
     [NO, 'your_mom',  [$o[5]],      null],
-    [OK, 'getZapped', [],           ['Lisa'=>2]],
+    [OK, 'getZapped', [],           ['Sarah'=>2]],
   ],
   [ // FooBar2()
     [OK, 'greet',     [$o[1]],      ANON . HI . 'Bob'],
@@ -223,7 +249,7 @@ $m =
     [OK, 'greet',     [$o[5]],      ANON . HI . 'Sarah'],
     [NO, 'yourself',  [5],          null],
     [OK, 'getZapped', [],           [ANON=>5]],
-    [OK, 'shat',      [],           []],
+    [OK, 'shat',      [],           [ANON=>5]],
   ],
   [ // FooZapShit2(Mike, ['shit'])
     [OK, 'greet',     [$o[5]],     'Mike' . HI . 'Sarah'],
@@ -246,8 +272,8 @@ foreach ($o as $i => $O)
     foreach ($p[$i] as $prop => $expected)
     {
       if (is_null($expected))
-      { // We expect the property will not exist.
-        $t->ok(!property_exists($oname, $prop), "$oname->$prop does not exist");
+      { // We expect the property will not exist or be null.
+        $t->ok(!isset($O->$prop), "$oname->$prop does not exist or is null");
       }
       else
       { // We exect the property will exist and be a valid value.
@@ -287,3 +313,7 @@ foreach ($o as $i => $O)
     $t->dies($O, "Invalid class throws exception");
   }
 }
+
+echo $t->tap();
+return $t;
+
