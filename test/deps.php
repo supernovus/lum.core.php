@@ -8,6 +8,8 @@ require_once 'vendor/autoload.php';
 
 const C = 'construct';
 
+const T = 'deps_';
+
 const C_PRE = '__construct_';
 
 const ANON = 'anonymous';
@@ -18,13 +20,17 @@ const NO = 0; // Don't care about the output of the method.
 const OK = 1; // Expect the value to be something.
 const EX = 2; // Expect an exception to be thrown.
 
+function dbg($key, $is=null)
+{
+  return \Lum\Plugins\Debug::is($key, $is);
+}
+
 abstract class Base
 {
   public bool $debug = false;
   public function __construct ()
   {
-    $core = \Lum\Core::getInstance();
-    $this->debug = $core->debug->is('test_deps');
+    $this->debug = dbg(T.'groups');
   }
 }
 
@@ -95,9 +101,16 @@ trait Zap
 
   protected function zap_your_mom(Person $person)
   {
+    $dbg = dbg(T.'zap_your_mom');
     $name = $person->name;
+    if (dbg(T.'zap_your_mom'))
+    {
+      error_log("zap_your_mom($name)");
+    }
     if (isset($this->zapped[$name]))
-      $this->zapped[$name] += 1;
+    {
+      $this->zapped[$name]++;
+    }
     else
       $this->zapped[$name] = 1;
   }
@@ -204,16 +217,16 @@ $o =
 
 $p =
 [
-  ['name' => ANON,     'bar_id' => NONA],
-  ['name' => 'Bob',    'bar_id' => 'boB'],
-  ['name' => ANON,     'bar_id' => NONA],
-  ['name' => 'Lisa',   'bar_id' => 'asiL'],
-  ['name' => ANON,     'bar_id' => null],
-  ['name' => 'Sarah',  'bar_id' => 'haraS'],
-  ['name' => ANON,     'bar_id' => null],
-  ['name' => 'Mike',   'bar_id' => null],
-  null, // No property tests on exceptions.
-  ['name' => null,     'bar_id' => null],
+  ['name' => ANON,     'bar_id' => NONA],      // FooBar1()
+  ['name' => 'Bob',    'bar_id' => 'boB'],     // FooBar1(Bob)
+  ['name' => ANON,     'bar_id' => NONA],      // FooBarZap1()
+  ['name' => 'Lisa',   'bar_id' => 'asiL'],    // FooBarZap1(Lisa)
+  ['name' => ANON,     'bar_id' => null],      // FooBar2()
+  ['name' => 'Sarah',  'bar_id' => 'haraS'],   // FooBar2(Sarah, ['bar'])
+  ['name' => ANON,     'bar_id' => null],      // FooZapShit2()
+  ['name' => 'Mike',   'bar_id' => null],      // FooZapShit2(Mike)
+  null,                                        // ZapBar2()
+  ['name' => null,     'bar_id' => null],      // Shit2(Will)
 ];
 
 $m =
@@ -251,7 +264,7 @@ $m =
     [OK, 'getZapped', [],           [ANON=>5]],
     [OK, 'shat',      [],           [ANON=>5]],
   ],
-  [ // FooZapShit2(Mike, ['shit'])
+  [ // FooZapShit2(Mike)
     [OK, 'greet',     [$o[5]],     'Mike' . HI . 'Sarah'],
     [NO, 'yourself',  [9],         null],
     [OK, 'getZapped', [],          ['Mike'=>9]],

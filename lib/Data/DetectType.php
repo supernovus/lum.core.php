@@ -69,7 +69,8 @@ trait DetectType
    */
   protected function detect_string_type (string $string)
   {
-    $fc = substr(trim($string), 0, 1);
+    $str = trim($string);
+    $fc = substr($str, 0, 1);
     if ($fc == '<')
     { // XML detected.
       return 'xml_string';
@@ -77,6 +78,10 @@ trait DetectType
     elseif ($fc == '[' || $fc == '{')
     { // JSON detected.
       return 'json';
+    }
+    elseif ($fc == '%' || $ftc == '-' || $fc == '#')
+    { // Starting with any of those, it may be a YAML document.
+      return 'yaml';
     }
   }
 

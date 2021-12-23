@@ -10,7 +10,6 @@ The Lum\Core library, and it's primary plugins and helpers.
 | ----------------------- | ------------------------------------------------- |
 | Lum\Autoload            | Helper for managing extra autoloaders.            |
 | Lum\Core                | The Core class itself.                            |
-| Lum\Exception           | Base Exception class for Lum Core and plugins.    |
 | Lum\Plugins\Capture     | A helper for capturing PHP output.                |
 | Lum\Plugins\Client      | A plugin to get information on client.            |
 | Lum\Plugins\Conf        | A configuration plugin.                           |
@@ -27,8 +26,14 @@ The Lum\Core library, and it's primary plugins and helpers.
 | Lum\Plugins\Url         | A plugin for working with URLs.                   |
 | Lum\Plugins\Views       | A plugin for loading views.                       |
 | Lum\Data\JSON           | A trait for objects with JSON representations.    |
-| Lum\Data\Obj            | Base class for Data objects.                      |
-| Lum\Data\Arrayish       | An extension of Obj with Array-like access.       |
+| Lum\Data\Arraylike      | A trait for array-like data objects.              |
+| Lum\Data\BuildXML       | A trait with helpers for building XML data.       |
+| Lum\Data\InputXML       | A trait for data objects that can import XML.     |
+| Lum\Data\OutputXML      | A trait for data objects that can output XML.     |
+| Lum\Data\DetectType     | A trait with helpers for detecting input type.    |
+| Lum\Data\O              | Minimal base class for Data objects.              |
+| Lum\Data\Obj            | Default base class for Data objects.              |
+| Lum\Data\Arrayish       | An extension of Obj using Arraylike trait.        |
 | Lum\Data\Container      | An extension of Arrayish with indexed children.   |
 | Lum\Loader\Content      | A loader trait for parsing PHP content.           |
 | Lum\Loader\Files        | A loader trait for finding files in a folder.     |
@@ -37,6 +42,9 @@ The Lum\Core library, and it's primary plugins and helpers.
 | Lum\Meta\Cache          | A trait for simple caching.                       |
 | Lum\Meta\ClassID        | A trait for returning a class id from a loader.   |
 | Lum\Meta\ClassInfo      | A trait for extended class information.           |
+| Lum\Meta\HasDeps        | A trait for managing dependencies.                |
+| Lum\Meta\HasProps       | A trait for working with property defaults.       |
+| Lum\Meta\SetProps       | A trait for setting properties via an array.      |
 | Lum\Router\FromRIML     | A class for converting RIML into Router config.   |
 
 ## Creating a Core instance
@@ -47,7 +55,7 @@ beginning.
 ```php
 require_once 'vendor/autoload.php';  // Register Composer autoloaders.
 \Lum\Autoload::register();           // If using spl_autoload, call this.
-$core = \Lum\Core::getInstance();     // Create your Core object.
+$core = \Lum\Core::getInstance();    // Create your Core object.
 ```
 
 ## Getting the current Core instance

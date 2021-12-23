@@ -6,10 +6,10 @@ namespace Lum;
  * The Lum Core. 
  *
  * It's a simple singleton object that offers plugins to help make building
- * PHP apps simple. Does not use the regular PHP constructor. 
+ * PHP apps simple. Does not use the regular PHP constructor.
  * Instead you do \Lum\Core::getInstance().
  */
-class Core implements \ArrayAccess
+class Core extends Util implements \ArrayAccess
 {
   protected static $__instance;
 
@@ -41,89 +41,6 @@ class Core implements \ArrayAccess
       static::$__instance->loadOpts($opts, true);
     }
     return static::$__instance;
-  }
-
-  /**
-   * Populate some options in an array or array-like object based
-   * on the contents of a JSON configuration file.
-   *
-   * @param string $file       The filename we want to load.
-   * @param array  &$opts      The array we are reading the options into.
-   * @param bool   $overwrite  Should we overwrite existing options?
-   */
-  public static function load_opts_from ($file, &$opts, $overwrite=false)
-  {
-    if (file_exists($file))
-    {
-      $conf = json_decode(file_get_contents($file), true);
-      if (!isset($conf))
-      {
-        throw new Exception("Invalid JSON in '$file', cannot continue.");
-      }
-      foreach ($conf as $ckey => $cval)
-      {
-        if ($overwrite || !isset($opts[$ckey]))
-        {
-          $opts[$ckey] = $cval;
-        }
-      }
-    }
-  }
-
-  /** 
-   * Get the output content from a PHP file.
-   * This is used as the backend function for all View related methods.
-   *
-   * @param string $__view_file  The PHP file to get the content from.
-   * @param array  $__view_data  Associative array of variables.
-   *
-   * @return string  The output from the PHP file.
-   */
-  public static function get_php_content ($__view_file, $__view_data=NULL)
-  { 
-    // First, start saving the buffer.
-    ob_start();
-    if (isset($__view_data))
-    { // First let's see if we have set a local name for the full data.
-      if (isset($__view_data['__data_alias']))
-      {
-        $__data_alias = $__view_data['__data_alias'];
-        $$__data_alias = $__view_data;
-      }
-      if ($__view_data instanceof \ArrayObject)
-      {
-        extract($__view_data->getArrayCopy());
-      }
-      elseif (is_array($__view_data))
-      {
-        extract($__view_data);
-      }
-    }
-    // Now, let's load that template file.
-    include $__view_file;
-    // Okay, now let's get the contents of the buffer.
-    $buffer = ob_get_contents();
-    // Clean out the buffer.
-    @ob_end_clean();
-    // And return out processed view.
-    return $buffer;
-  }
-
-  /**
-   * Manipulate a set of binary flags.
-   *
-   * @param int &$flags  The flags we are modifying (passed by reference.)
-   * @param int $flag    The flag we are adding or removing to $flags.
-   * @param bool $value  (true) If true, add the flag, if false remove it.
-   * 
-   * @return void
-   */
-  public static function set_flag (&$flags, $flag, $value=true)
-  {
-    if ($value)
-      $flags = $flags | $flag;
-    else
-      $flags = $flags - ($flags & $flag);
   }
 
   /**
