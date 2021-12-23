@@ -248,9 +248,9 @@ $m =
   ],
   [ // FooBarZap1(Lisa)
     [OK, 'greet',     [$o[5]],      'Lisa' . HI . 'Sarah'],
-    [NO, 'your_mom',  [$o[5]],      null],
-    [NO, 'your_mom',  [$o[5]],      null],
-    [OK, 'getZapped', [],           ['Sarah'=>2]],
+    [NO, 'your_mom',  [$o[5]],      null], // Will increment.
+    [NO, 'your_mom',  [$o[5]],      null], // Won't do anything.
+    [OK, 'getZapped', [],           ['Sarah'=>1]],
   ],
   [ // FooBar2()
     [OK, 'greet',     [$o[1]],      ANON . HI . 'Bob'],
