@@ -24,18 +24,18 @@ class Core extends Util implements \ArrayAccess
   /**
    * Get the current Lum Core instance, or create an instance.
    *
-   * @param array $opts  Options to pass to instance (optional).
+   * @param mixed $opts  Options to pass to instance (optional).
+   *                     See {@see \Lum\Core::loadOpts()} for possible formats.
    *
    * @return Lum\Core  The Lum Core instance.
-   *
-   * @throws Lum\Exception  If no instance has been created yet.
    */
-  public static function getInstance ($opts=null)
+  public static function getInstance (mixed $opts=null): static
   {
     if (!isset(static::$__instance))
     {
       static::$__instance = new static($opts);
     }
+
     if (isset($opts))
     {
       static::$__instance->loadOpts($opts, true);
@@ -78,9 +78,9 @@ class Core extends Util implements \ArrayAccess
   /**
    * Clear the currently set Exception handler.
    *
-   * @return mixed  The Exception handler that we cleared if it was set.
+   * @return ?Callable  The Exception handler that we cleared if it was set.
    */
-  public function clearExceptionHandler ()
+  public function clearExceptionHandler (): ?Callable
   {
     $handler = $this->exceptionHandler;
     unset($this->exceptionHandler);
@@ -91,23 +91,53 @@ class Core extends Util implements \ArrayAccess
   /**
    * Load options.
    *
-   * @param mixed $opts  An array of options, or a path to a JSON file.
+   * @param string|array $opts  There's a few formats we support here.
+   *
+   *  Passing a single `string` means it's the path to a configuration file
+   *  we want to load and add any options from it to our opts.
+   *
+   *  Passing a _flat_ `array` (no keys, or numeric keys only) then if the
+   *  value is a string, it's a filename and handled as above. If the value is
+   *  boolean, it will change the `$overwrite` value for the following files.
+   *
+   *  Passing an _associative_ `array` (string keys that aren't just numbers),
+   *  then it's assumed to be an array of options we're merging directly.  
+   *
    * @param bool $overwrite=false Should we overwrite existing options?
    */
-  public function loadOpts ($opts, $overwrite=false)
+  public function loadOpts (string|array $opts, bool $overwrite=false): void
   {
+    #error_log("Core::loadOpts(".json_encode([$opts, $overwrite]).')');
+
     if (is_array($opts))
     {
+      #error_log('-- array --');
       foreach ($opts as $key => $val)
       {
-        if ($overwrite || !isset($this->opts[$key]))
-        {
+        if (is_numeric($key))
+        { // Flat arrays can contain a list of files.
+          #error_log("-- numeric key --");
+          if (is_string($val))
+          {
+            #error_log('-- a string, pass to load_opts_from --');
+            static::load_opts_from($val, $this->opts, $overwrite);
+          }
+          elseif (is_bool($val))
+          { // A way to toggle overwrite for different files.
+            #error_log('-- bool --');
+            $overwrite = $val;
+          }
+        }
+        elseif ($overwrite || !isset($this->opts[$key]))
+        { // Non-numeric keys are options we're setting.
+          #error_log('-- direct assignment --');
           $this->opts[$key] = $val;
         }
       }
     }
     elseif (is_string($opts))
     {
+      #error_log('-- string, pass to load_opts_from --');
       static::load_opts_from($opts, $this->opts, $overwrite);
     }
   }
@@ -115,13 +145,13 @@ class Core extends Util implements \ArrayAccess
   /**
    * Get all currently set options.
    */
-  public function getOpts ()
+  public function getOpts (): array
   {
     return $this->opts;
   }
 
   // Not meant for use outside of the Plugins plugin.
-  public function _add_plugin ($name, $plugin)
+  public function _add_plugin (string $name, mixed $plugin): void
   {
     if (isset($this->lib[$name]) && !$this->allowOverwrite)
     {
