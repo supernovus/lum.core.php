@@ -10,14 +10,21 @@ namespace Lum\Plugins;
 
 use finfo;
 
+use \Lum\Encode\Safe64;
+
 class Url
 {
+  const FORMAT_NONE   = -1;
   const FORMAT_JSON   = 0;
   const FORMAT_SERIAL = 1;
   const FORMAT_UBJSON = 2;
 
+  const TYPE_STRING   = -1;
   const TYPE_ARRAY    = 0;
   const TYPE_OBJECT   = 1;
+
+  const DEF_HTTP_PORT  = 80;
+  const DEF_HTTPS_PORT = 443;
 
   /** 
    * Redirect to another page. This ends the current PHP process.
@@ -41,7 +48,7 @@ class Url
    * See the site_url() function for details on how 'ssl' and 'port' work.
    *
    */
-  public static function redirect ($url, $opts=array())
+  public static function redirect (string $url, array $opts=[]): never
   {
     // Set if we set an explicit 'relative' or 'full' option.
     if (isset($opts['relative']))
@@ -55,22 +62,20 @@ class Url
     else
     {
       // No relative or full option set, determine based on passed URL/path.
-      $relative = is_numeric(strpos($url, ':')) ? False : True;
+      $relative = str_contains();
     }
 
     if ($relative)
     {
       // Determine if we should force SSL.
-      if (isset($opts['ssl']))
-        $ssl = $opts['ssl'];
-      else
-        $ssl = Null;
+      $ssl = (isset($opts['ssl']) && is_bool($opts['ssl'])) 
+        ? $opts['ssl'] 
+        : null;
 
       // Determine if we should use an alternative port.
-      if (isset($opts['port']))
-        $port = $opts['port'];
-      else
-        $port = Null; // Use the default ports.
+      $port = (isset($opts['port']) && is_int($opts['port']))
+        ? $opts['port']
+        : null;
 
       // Prepend the site URL to the passed path.
       $url = static::site_url($ssl, $port) . $url;
@@ -84,16 +89,18 @@ class Url
   /** 
    * Return our website's base URL.
    *
-   * @param Mixed $ssl      Force the use of SSL?
-   * @param Mixed $port     Force a specific port?
+   * @param ?bool $ssl  Force the use of SSL?
+   *   If `true` we force SSL. If `false` we force non-SS.
+   *   If `null` we will auto-detect the current protocol and use that.
+   *   Default: `null`
    *
-   * If $ssl is True, we force SSL, if it is False, we force regular HTTP.
-   * If it is Null (default) we auto-detect the current protocol and use that.
+   * @param ?int $port  Force a specific port?
+   *   If an `int` we use that as the port.
+   *   If `null` we will auto-detect the appropriate port and use that.
    *
-   * If $port is set to an integer, we force that as the port.
-   * If it is Null (default) we determine the appropriate port to use.
+   * @return string
    */
-  public static function site_url ($ssl=Null, $port=Null)
+  public static function site_url ($ssl=Null, $port=Null): string
   { 
     if (isset($port))
     {
@@ -142,7 +149,7 @@ class Url
   /** 
    * Return our current request URI.
    */
-  public static function request_uri ()
+  public static function request_uri (): string
   {
     if (isset($_SERVER['REQUEST_URI']))
     {
@@ -168,7 +175,7 @@ class Url
   /** 
    * Return the current URL (full URL path)
    */
-  public static function current_url ()
+  public static function current_url (): string
   {
     return static::site_url() . static::request_uri();
   }
@@ -176,9 +183,9 @@ class Url
   /** 
    * Return the name of the current script.
    *
-   * @param Bool $full   If set to True, return the full path.
+   * @param bool $full   If set to True, return the full path.
    */
-  public static function script_name ($full=False)
+  public static function script_name (bool $full=False): string
   {
     if ($full)
     {
@@ -306,131 +313,142 @@ class Url
   }
 
   /**
-   * Transform a PHP array/object into a URL-safe string.
+   * Create a new `Safe64` instance for encoding/decoding.
    *
-   * We encode the input, then we Base64 encode the data string. 
-   * Finally we perform the following character substitutions:
+   * @param array $opts  (Optional) Constructor options for the instance.
    *
-   *   '+' becomes '-'
-   *   '/' becomes '_'
-   *
-   * If $useTildes is true, then:
-   *
-   *   '=' becomes '~'
-   *
-   * If $useTildes is false, we strip all '=' characters.
-   *
-   * @param mixed $input        The PHP array/object to encode.
-   * @param int   $format       One of:
-   *                            - URL::FORMAT_JSON   (default)
-   *                            - URL::FORMAT_SERIAL
-   *                            - URL::FORMAT_UBJSON
-   *
-   * The encoding format can be one of the types listed above.
-   *
-   * JSON is a decent default, it's supported natively in PHP and is fast.
-   * SERIAL is much larger, and thus will generate very large strings, but
-   * it can encode almost any PHP object natively.
-   * UBJSON is the smallest format, as it is a binary version of JSON.
-   * It uses pack/unpack and thus may be slightly slower than JSON.
-   *
-   * @param bool $useTildes   If true, replace '=' with '~'.
-   *
-   * @return string  A URL-safe base64 encoded string.
+   * @return \Lum\Encode\Safe64
    */
-  public static function encodeObject ($object, $format=0, $useTildes=false)
+  public static function safe64(array $opts=[]): Safe64
   {
-    if ($format === self::FORMAT_JSON)
-    {
-      $encoded = json_encode($object);
-    }
-    elseif ($format === self::FORMAT_SERIAL)
-    {
-      $encoded = serialize($object);
-    }
-    elseif ($format === self::FORMAT_UBJSON)
-    {
-      $encoded = \Lum\Encode\UBJSON::encode($object);
-    }
-    else
-    {
-      throw new \Exception("Unrecognized format in URL::encodeObject()");
-    }
-    return \Lum\Encode\Safe64::encode($encoded, $useTildes);
+    return new Safe64($opts);
   }
 
   /**
-   * The older version of encodeObject. Kept for backwards compatibility.
+   * Encode data with `Safe64`.
+   *
+   * @param mixed $data  Data to encode.
+   * @param array $opts  (Optional) Constructor options for `Safe64`.
+   * @return string  The encoded data.
+   */
+  public static function encodeData(mixed $data, array $opts=[])
+    : string
+  {
+    return $this->safe64($opts)->encode($data);
+  }
+
+  /**
+   * Decode a `Safe64` string into the original data.
+   *
+   * @param string $safe64string  The `Safe64` serialized string.
+   * @param array $opts  (Optional) Constructor options for `Safe64`.
+   * @return mixed  The decoded data.
+   */
+  public static function decodeData(string $safe64string, array $opts=[])
+    : mixed
+  {
+    return $this->safe64($opts)->decode($safe64string);
+  }
+
+  /**
+   * Transform a PHP array/object into a URL-safe string.
+   *
+   * @deprecated Use `encodeData()` instead.
+   *
+   * @param mixed $input  The PHP array/object to encode.
+   * @param int  $format  (Optional) One of the `FORMAT_*` constants.
+   *  
+   *   These will be mapped to corresponding `\Lum\Encode\Safe64\Format` types.
+   *
+   *   - `Url::FORMAT_NONE` uses `Format::NONE` (Default value).
+   *   - `Url::FORMAT_JSON` uses `Format::JSON`
+   *   - `Url::FORMAT_SERIAL` uses `Format::SERIAL`
+   *   - `Url::FORMAT_UBJSON` uses `Format::UBJSON`
+   *                    
+   * @param bool $useTildes  (Optional) If `true` use the old tilde format.
+   *
+   *   This is kept for backwards compatibility, but is not recommended.
+   *
+   * @return string  A Safe64-encoded string.
+   */
+  public static function encodeObject (
+    mixed $object, 
+    int $format=self::FORMAT_JSON, 
+    bool $useTildes=false,
+    bool $showdep=true): string
+  {
+    if ($showdep) \Lum\Compat::deprecate("encodeObject() is deprecated");
+    $s64 = $this->safe64(
+    [
+      'format'    => $format + 1, 
+      'useTildes' => $useTildes,
+    ]);
+    return $s64->encode($object);
+  }
+
+  /**
+   * An even older version of encodeObject().
+   *
+   * @deprecated Use `encodeData()` instead.
    *
    * @param mixed $input      The PHP array/object to encode.
-   * @param bool  $serialize  If true, FORMAT_SERIAL, otherwise FORMAT_JSON.
-   * @param bool  $tildes     Passed to encodeObject, see it for details.
+   * @param bool  $serialize  If true, `FORMAT_SERIAL`, otherwise `FORMAT_JSON`.
+   * @param bool  $tildes     Passed to `encodeObject()`.
    *
-   * See encodeObject() for the rest of the details.
    */
-  public static function encodeArray ($object, $serialize=false, $tildes=false)
+  public static function encodeArray (
+    mixed $object, 
+    bool $serialize=false, 
+    bool $tildes=false): string
   {
+    \Lum\Compat::deprecate("encodeArray() is deprecated");
     if ($serialize)
       $format = self::FORMAT_SERIAL;
     else
       $format = self::FORMAT_JSON;
-    return self::encodeObject($object, $format, $tildes);
+    return self::encodeObject($object, $format, $tildes, false);
   }
 
   /** 
    * Decode a string in encodeObject() format.
    *
-   * @param string $input        The URL string to decode.
-   * @param int    $format       Same formats as encodeObject().
-   * @param int    $type         One of:
-   *                             - URL::TYPE_ARRAY   (default)
-   *                             - URL::TYPE_OBJECT
+   * @deprecated Use `decodeData()` instead.
    *
-   * The input format must match the format that was used to encode the
-   * string. This version does not attempt detection.
+   * @param string $input   The URL string to decode.
+   * @param int    $format  (Optional) Same formats as encodeObject().
    *
-   * The output type can be either an array, or an object.
+   *   If there is no Safe64 header (v3 and later) on the string, then
+   *   the input format must match the format that was used to encode the
+   *   string, as we won't be able to auto-detect it.
    *
-   * The $type parameter is ignored if FORMAT_SERIAL was used.
+   * @param int $type  (Optional) One of the `TYPE_*` constants.
+   *  
+   *   These will be mapped to corresponding `\Lum\Encode\Safe64\Type` types.
+   *
+   *   - `Url::TYPE_ARRAY` uses `Type::Array` (default)
+   *   - `Url::TYPE_OBJECT` uses `Type::Object`
+   *   - `Url::TYPE_STRING` uses `Type::String`
+   *
    */
-  public static function decodeObject ($string, $format=0, $type=0)
+  public static function decodeObject (
+    string $string, 
+    int $format=self::FORMAT_JSON, 
+    int $type=self::TYPE_ARRAY,
+    bool $showdep=true): mixed
   {
-#    error_log("decodeObject(string, $format, $type)");
-    $decoded = \Lum\Encode\Safe64::decode($string);
-    if ($format === self::FORMAT_JSON)
-    {
-      if ($type === self::TYPE_ARRAY)
-        $assoc = true;
-      elseif ($type === self::TYPE_OBJECT)
-        $assoc = false;
-      else
-        throw new \Exception("Unrecognized JSON type in URL::decodeObject()");
-
-      return json_decode($decoded, $assoc);
-    }
-    elseif ($format === self::FORMAT_SERIAL)
-    {
-      return unserialize($decoded);
-    }
-    elseif ($format === self::FORMAT_UBJSON)
-    {
-      if ($type === self::TYPE_ARRAY)
-        $type = \Lum\Encode\UBJSON::TYPE_ARRAY;
-      elseif ($type === self::TYPE_OBJECT)
-        $type = \Lum\Encode\UBJSON::TYPE_OBJECT;
-      else
-        throw new \Exception("Unrecognized UBJSON type in URL::decodeObject()");
-
-      return \Lum\Encode\UBJSON::decode($decoded, $type);
-    }
-    else
-    {
-      throw new \Exception("Unrecognized format in URL::decodeObject()");
-    }
+    if ($showdep) \Lum\Compat::deprecate("decodeObject() is deprecated");
+    $s64 = $this->safe64(
+    [
+      'format' => $format + 1, 
+      'type'   => $type + 1,
+    ]);
+    return $s64->decode($object);
   }
 
   /**
-   * The old version of decodeObject. Kept for backwards comatibility.
+   * An even old version of decodeObject().
+   *
+   * @deprecated Use `decodeData()` instead.
    *
    * @param string $input        The URL string to decode.
    * @param bool   $serialized   If true, FORMAT_SERIAL, otherwise FORMAT_JSON.
@@ -438,8 +456,12 @@ class Url
    *
    * See decodeObject() for the rest of the details.
    */
-  public static function decodeArray ($string, $serialized=false, $assoc=true)
+  public static function decodeArray (
+    string $string, 
+    bool $serialized=false, 
+    bool $assoc=true): mixed
   {
+    \Lum\Compat::deprecate("decodeArray() is deprecated");
     if ($serialized)
       $format = self::FORMAT_SERIAL;
     else
@@ -448,7 +470,7 @@ class Url
       $type = self::TYPE_ARRAY;
     else
       $type = self::TYPE_OBJECT;
-    return self::decodeObject($string, $format, $type);
+    return self::decodeObject($string, $format, $type, false);
   }
 
 }

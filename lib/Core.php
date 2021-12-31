@@ -53,6 +53,11 @@ class Core extends Util implements \ArrayAccess
       ? (isset($opts['plugins']) ? $opts['plugins'] : $opts) 
       : [];
     $this->lib['plugins'] = new \Lum\Plugins\Plugins($plugopts);
+    $do_uopz = isset($opts, $opts['do_uopz']) ? $opts['do_uopz'] : true;
+    if ($do_uopz)
+    { // Check for uopz and re-enable 'exit' if it is loaded.
+      \Lum\Compat::uopz(true);
+    }
   }
 
   /**

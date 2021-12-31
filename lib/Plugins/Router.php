@@ -898,7 +898,7 @@ class Router
   /**
    * Redirect the browser to a known route, with the appropriate parameters.
    */
-  public function go ($routeName, $params=[], $ropts=[], $bopts=[])
+  public function go ($routeName, $params=[], $ropts=[], $bopts=[]): never
   {
     if ($this->log && $this->debug['routing'] > 1)
     {
