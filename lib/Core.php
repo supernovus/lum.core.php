@@ -11,6 +11,10 @@ namespace Lum;
  */
 class Core extends Util implements \ArrayAccess
 {
+  const L_PLUG = 'plugins';
+  const O_PLUG = 'plugins';
+  const O_UOPZ = 'do_uopz';
+
   protected static $__instance;
 
   public $allowOverwrite = false;
@@ -49,11 +53,14 @@ class Core extends Util implements \ArrayAccess
   protected function __construct ($opts)
   {
     // Initialize the Plugins plugin. Will be used to load all other plugins.
+    $PO = self::O_PLUG;
     $plugopts = isset($opts) 
-      ? (isset($opts['plugins']) ? $opts['plugins'] : $opts) 
+      ? (isset($opts[self::O_PLUG]) ? $opts[self::O_PLUG] : $opts) 
       : [];
-    $this->lib['plugins'] = new \Lum\Plugins\Plugins($plugopts);
-    $do_uopz = isset($opts, $opts['do_uopz']) ? $opts['do_uopz'] : true;
+    $this->lib[self::L_PLUG] = new \Lum\Plugins\Plugins($plugopts);
+
+    $DU = self::O_UOPZ;
+    $do_uopz = isset($opts, $opts[$DU]) ? $opts[$DU] : true;
     if ($do_uopz)
     { // Check for uopz and re-enable 'exit' if it is loaded.
       \Lum\Compat::uopz(true);
