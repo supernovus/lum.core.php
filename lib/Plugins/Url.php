@@ -331,10 +331,9 @@ class Url
    * @param array $opts  (Optional) Constructor options for `Safe64`.
    * @return string  The encoded data.
    */
-  public static function encodeData(mixed $data, array $opts=[])
-    : string
+  public static function encodeData(mixed $data, array $opts=[]): string
   {
-    return $this->safe64($opts)->encode($data);
+    return Safe64::encodeData($data, $opts);
   }
 
   /**
@@ -344,10 +343,9 @@ class Url
    * @param array $opts  (Optional) Constructor options for `Safe64`.
    * @return mixed  The decoded data.
    */
-  public static function decodeData(string $safe64string, array $opts=[])
-    : mixed
+  public static function decodeData(string $string, array $opts=[]): mixed
   {
-    return $this->safe64($opts)->decode($safe64string);
+    return Safe64::decodeData($string, $opts);
   }
 
   /**
