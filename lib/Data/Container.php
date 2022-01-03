@@ -34,6 +34,8 @@ abstract class Container extends Arrayish
   {
     if (isset($this->data[$offset]))
       return $this->data[$offset];
+    else
+      return null;
   }
 
   // Add an item to our index. Override this if you need anything
@@ -187,6 +189,8 @@ abstract class Container extends Arrayish
   {
     if (isset($this->data_index[$offset]))
       return $this->data_index[$offset];
+    else
+      return null;
   }
 
   public function offsetSet ($offset, $value): void

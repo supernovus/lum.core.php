@@ -81,6 +81,8 @@ trait Arraylike
   {
     if (isset($this->data[$offset]))
       return $this->data[$offset];
+    else
+      return null;
   }
 
   public function offsetSet ($offset, $value): void
