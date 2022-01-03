@@ -376,7 +376,7 @@ class Url
     bool $showdep=true): string
   {
     if ($showdep) \Lum\Compat::deprecate("encodeObject() is deprecated");
-    $s64 = $this->safe64(
+    $s64 = static::safe64(
     [
       'format'    => $format + 1, 
       'useTildes' => $useTildes,
@@ -435,7 +435,7 @@ class Url
     bool $showdep=true): mixed
   {
     if ($showdep) \Lum\Compat::deprecate("decodeObject() is deprecated");
-    $s64 = $this->safe64(
+    $s64 = static::safe64(
     [
       'format' => $format + 1, 
       'type'   => $type + 1,
