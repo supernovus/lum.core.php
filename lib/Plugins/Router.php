@@ -14,6 +14,7 @@ class Router
 
   const JSON_TYPE = 'application/json';
   const XML_TYPE  = 'application/xml';
+  const HTML_TYPE = 'text/html';
 
   const FORM_URLENC = "application/x-www-form-urlencoded";
   const FORM_DATA   = "multipart/form-data";
@@ -52,6 +53,11 @@ class Router
 
   public $populate_put_global = false; // Add _PUT global.
 
+  /**
+   * The default `$noHTML` value for the `acceptsXML()` method.
+   */
+  public $xml_excludes_html = true;
+
   public function known_routes ($showAll=false)
   {
     if ($showAll)
@@ -77,6 +83,7 @@ class Router
       'populate_put_global',
       'default_filter',
       'default_placeholder',
+      'xml_excludes_html',
     ]);
 
     if (isset($opts['extend']) && $opts['extend'])
@@ -684,6 +691,11 @@ class Router
     return $this->isContentType(static::XML_TYPE, false);
   }
 
+  public function isHTML ()
+  {
+    return $this->isContentType(static::HTML_TYPE, false);
+  }
+
   public function isContentType ($wanttype, $forcelc=true)
   {
     if ($forcelc)
@@ -722,7 +734,27 @@ class Router
   }
 
   /**
-   * Get a list of accept headers.
+   * Get a list of `Accept` headers, or test if we accept a type.
+   *
+   * @param string|array|null $mimeTypes  Test for the acceptance of this.
+   *
+   *   If `null` we aren't testing for any types.
+   *   If a `string` we're testing for a single mime type.
+   *   If an `array` we are testing a bunch of mime types.
+   *
+   * @return array|bool|string|null  The output depends on `$mimeTypes`.
+   *
+   *   If `$mimeTypes` was `null` this will return an `array` where the
+   *   key is the mime type, and the value is the weight (defaults to 1
+   *   if there was no ;q={weight} portion in the header.)
+   *
+   *   If `$mimeTypes` was a `string` this will return a `bool` indicating
+   *   if that single mime type was in the `Accept` header.
+   *
+   *   If `$mimeTypes` was an `array` this will either return a string
+   *   representing the first matching mime type found, or `null` indicating
+   *   no mime type matched.
+   *
    */
   public function accepts ($mimeTypes=null)
   {
@@ -779,14 +811,41 @@ class Router
   }
 
   /**
-   * We accept XML
-   * Note: several browsers send application/xml in the default
-   * Accept header, so this may not be the best way to determine
-   * if XML is the desired format. Reality sucks.
+   * Check if we accept XML.
+   *
+   * @param bool $noHTML  (Optional) How to handle HTML.
+   *
+   *   If this is `true` then if the `acceptsHTML()` method returns
+   *   true, this will return false.
+   *
+   *   If this is `false` we don't care whether or not HTML is accepted,
+   *   and will simply check for the application/xml in the Accepts header.
+   *
+   *   The default value is {@see \Lum\Plugins\Router::$xml_excludes_html}
+   *
+   * @return bool  If we accept XML.
    */
-  public function acceptsXML ()
+  public function acceptsXML ($noHTML=null)
   {
+    if (is_null($noHTML)) $noHTML = $this->xml_excludes_html;
+    if ($noHTML && $this->acceptsHTML())
+    { // HTML was not allowed, but was found. Bye bye.
+      return false;
+    } 
     return $this->accepts(static::XML_TYPE);
+  }
+
+  /**
+   * Check if we accept HTML.
+   *
+   * This is using the standard `text/html` that every modern browser includes
+   * in their default `Accept` header when requesting a page.
+   *
+   * @return bool  If we accept HTML.
+   */
+  public function acceptsHTML()
+  {
+    return $this->accepts(static::HTML_TYPE);
   }
 
   /**
@@ -1254,6 +1313,7 @@ class RouteContext implements \ArrayAccess
   [
     'requestUri', 'requestPaths', 'isJSON', 'isXML', 'isContentType',
     'contentType', 'accept', 'accepts', 'acceptsJSON', 'acceptsXML',
+    'isHTML', 'acceptsHTML',
   ];
 
   public $router;              // The router object.
