@@ -15,37 +15,104 @@ namespace Lum\Data;
 trait Arraylike
 {
   /**
-   * Add an item to our data.
+   * Add an item to our data, at the end of the array.
+   *
+   * @param mixed $item  The item to add.
    */
-  public function append ($item)
+  public function append ($item): void
   {
     $this->data[] = $item;
   }
 
-  public function insert ($item, $pos=0)
+  /**
+   * Splice items into the data.
+   *
+   * @param int $pos  The starting offset position to place items.
+   * @param int $len  See PHP `array_splice()` for how this works.
+   * @param mixed ...$items  Anything other parameters are items to add.
+   *
+   * @return array  If items were removed, they'll be in here.
+   */
+  public function splice (int $pos, ?int $len=null, ...$items): array
+  {
+    return array_splice($this->data, $pos, $len, $items);
+  }
+
+  /**
+   * Insert a single item into the data.
+   *
+   * @param mixed $item  The item to insert.
+   * @param int $pos     Offset to put item (optional, default `0`)
+   *
+   *   If the offset is `0` this will use direct array manipulation.
+   *   If it's anything other than `0`, it'll defer to the `splice` method.
+   *
+   * @return void
+   */
+  public function insert ($item, int $pos=0): void
   {
     if ($pos)
-    {
-      if (!is_array($item))
-      { // Wrap singletons into an array.
-        $item = array($item);
-      }
-      array_splice($this->data, $pos, 0, $item);
+    { // If pos is anything but zero, we use splice() to insert the item(s).
+      $this->splice($pos, 0, $item);
     }
     else
-    {
+    { // This is a quick shortcut that's faster than the above.
       array_unshift($this->data, $item);
     }
   }
 
-  public function swap ($pos1, $pos2)
+  /**
+   * Insert multiple items into the data.
+   *
+   * @param array $items  The items to insert.
+   * @param int $pos      Offset to put item (optional, default `0`)
+   *
+   *   Same logic as `insert` applies here as well.
+   *
+   */
+  public function insertAll (array $items, int $pos=0): void
+  {
+    if ($pos)
+    { 
+      $this->splice($pos, 0, ...$items);
+    }
+    else
+    { 
+      array_unshift($this->data, ...$items);
+    }
+  }
+
+  /**
+   * Swap two items by their position/key.
+   *
+   * @param int|string $pos1  The position or key of the first item.
+   * @param int|string $pos2  The position or key of the second item.
+   */
+  public function swap (int|string $pos1, int|string $pos2)
   {
     $new1 = $this->data[$pos2];
     $this->data[$pos2] = $this->data[$pos1];
     $this->data[$pos1] = $new1;
   }
 
+  /**
+   * See if a key in the data exists and is non-null.
+   */
+  public function is ($key): bool
+  {
+    return isset($this->data[$key]);
+  }
+
+  /**
+   * See if a key in the data exists, even if the value is null.
+   */
+  public function keyExists ($key): bool
+  {
+    return array_key_exists($key, $this->data);
+  }
+
   // Iterator interface.
+
   public function current (): mixed
   {
     return current($this->data);
@@ -72,63 +139,66 @@ trait Arraylike
   }
 
   // ArrayAccess Interface.
+
+  /** @see \Lum\Data\Arraylike::keyExists() */ 
   public function offsetExists ($offset): bool
-  {
-    return array_key_exists($offset, $this->data);
+  { 
+    return $this->keyExists($offset);
   }
 
+  /** Get an item with a specific position or key. */
   public function offsetGet ($offset): mixed
   {
-    if (isset($this->data[$offset]))
-      return $this->data[$offset];
-    else
-      return null;
+    return ($this->data[$offset] ?? null);
   }
 
+  /** Set an item using a specific position or key. */
   public function offsetSet ($offset, $value): void
   {
     $this->data[$offset] = $value;
   }
 
+  /** Remove an item from a specific position or key. */
   public function offsetUnset ($offset): void
   {
     unset($this->data[$offset]);
   }
 
   // Countable interface.
+
+  /** The number of items in our data. */
   public function count (): int
   {
     return count($this->data);
   }
 
-  // Finally, the is() method is separate from offsetExists.
-  public function is ($key)
-  {
-    return isset($this->data[$key]);
-  }
+  // Property interface.
 
-  // Property interface, maps to the ArrayAccess interface.
+  /** @see \Lum\Data\Arraylike::offsetGet() */
   public function __get ($name)
   {
     return $this->offsetGet($name);
   }
 
+  /** @see \Lum\Data\Arraylike::offsetExists() */
   public function __isset ($name)
   {
     return $this->offsetExists($name);
   }
 
+  /** @see \Lum\Data\Arraylike::offsetUnset() */
   public function __unset ($name)
   {
     $this->offsetUnset($name);
   }
 
+  /** @see \Lum\Data\Arraylike::offsetSet() */
   public function __set ($name, $value)
   {
     $this->offsetSet($name, $value);
   }
 
-  // A quick helper. Override as needed.
+  /** Get a full list of keys/indexes in our data. */
   public function array_keys ()
   {
     return array_keys($this->data);

@@ -13,14 +13,18 @@ namespace Lum\Data;
 abstract class Container extends Arrayish
 {
   protected $data_itemclass;          // Wrap our items in this class.
-  protected $data_index = array();    // Index for hash access.
-  protected $data_allow_null = False; // Default option for allowing nulls.
+  protected $data_index = [];         // Index for hash access.
+  protected $data_allow_null = false; // Default option for allowing nulls.
+
+  protected $data_id_methods = ['data_identifier'];
+  protected $data_id_props   = ['id', '_id'];
+  protected $data_id_keys    = ['id', '_id'];
 
   // Clear our data, including index.
-  public function clear ($opts=array())
+  public function clear ($opts=[])
   {
-    $this->data = array();
-    $this->data_index = array();
+    $this->data = [];
+    $this->data_index = [];
   }
 
   // Find the position of the child object.
@@ -32,42 +36,83 @@ abstract class Container extends Arrayish
   // Get the item at position x
   public function at_position ($offset)
   {
-    if (isset($this->data[$offset]))
-      return $this->data[$offset];
-    else
-      return null;
+    return $this->data[$offset] ?? null;
   }
 
   // Add an item to our index. Override this if you need anything
   // more complex than the rules below.
-  protected function add_data_index ($item, $indexname=Null)
+  protected function add_data_index ($item, $indexname=null)
   {
     // First and foremost, if indexname is specified, it overrides all else.
     if (isset($indexname))
     {
       $this->data_index[$indexname] = $item;
-      return True;
+      return true;
     }
-    // If we are an object, see if we have the data_identifier() method.
-    // Yes, that's right, we are using Duck Typing.
-    elseif (is_object($item) && is_callable(array($item, 'data_identifier')))
+
+    $id = $this->get_data_index($item);
+    if (isset($id))
+    { // A valid id was found.
+      $this->data_index[$id] = $item;
+      return true;
+    }
+
+    // No id could be determined.
+    return false;
+  }
+
+  public function get_data_id ($item)
+  {
+    if (is_object($item))
     {
-      $id = $item->data_identifier();
-      if (isset($id) && $id !== False)
+      // Check for methods first.
+      foreach ($this->data_id_methods as $name)
       {
-        $this->data_index[$id] = $item;
-        return True;
+        $meth = [$item, $name];
+        if (is_callable($meth))
+        { // A method exists, call it.
+          $id = $meth();
+          if (is_string($id) || is_numeric($id))
+          {
+            return $id;
+          }
+        }
+      }
+
+      // Then for public properties.
+      foreach ($this->data_id_props as $name)
+      {
+        try
+        {
+          $id = $item->$name ?? null;
+          if (is_string($id) || is_numeric($id))
+          {
+            return $id;
+          }
+        }
+        catch (\Throwable $e)
+        {
+          error_log("get_data_id~exception: ".$e->getMessage());
+        }
       }
     }
-    // Similarly, if we are an array, and have a key of 'id', use it.
-    elseif (is_array($item) && isset($item['id']))
+    elseif (is_array($item))
     {
-      $id = $item['id'];
-      $this->data_index[$id] = $item;
-      return True;
+      foreach ($this->data_id_keys as $name)
+      {
+        if (isset($item[$name]))
+        {
+          $id = $item[$name];
+          if (is_string($id) || is_numeric($id))
+          {
+            return $id;
+          }
+        }
+      }
     }
-    // Anything else, isn't added to our index.
-    return False;
+
+    // If we reached here, nothing matched.
+    return null;
   }
 
   // Get the index number based on key.
@@ -78,17 +123,13 @@ abstract class Container extends Arrayish
     for ($i=0; $i < $dcount; $i++)
     {
       $item = $this->data[$i];
-      if (is_object($item) && is_callable(array($item, 'data_identifier')))
-      {
-        $id = $item->data_identifier();
-        if ($id == $key) return $i; // We found the index.
-      }
-      elseif (is_array($item) && isset($item['id']))
-      {
-        if ($item['id'] == $key) return $i; // Found it.
+      $id = $this->get_data_id($item);
+      if (isset($id) && $id === $key)
+      { // We found it.
+        return $i;
       }
     }
-    return Null; // Sorry, we did not find that key.
+    return null; // Sorry, we did not find that key.
   }
 
   public function get_itemclass ()
@@ -101,16 +142,16 @@ abstract class Container extends Arrayish
         return $class;
       }
     }
-    return Null;
+    return null;
   }
 
-  // Overridden load_array() method.
+  // Overridden load_[] method.
   // If we have a itemclass, all items in the array will be
   // passed to the itemclass's constructor, with 'parent' set to this
   // object. If a validate method exists in the child class,
   // it will be called to ensure the item is valid.
   // Only valid items will be added to our data.
-  public function load_array ($array, $opts=array())
+  public function load_array ($array, $opts=[])
   {
     $opts['parent'] = $this;
     $class = $this->get_itemclass();
@@ -119,11 +160,11 @@ abstract class Container extends Arrayish
       if (isset($class))
       { // Wrap our item in a class.
         $item = new $class($item, $opts);
-        if (is_callable(array($item, 'validate')))
+        if (is_callable([$item, 'validate']))
         {
           if (!$item->validate())
           { // Oops, we didn't pass validation.
-            if (is_callable(array($this, 'invalid_data')))
+            if (is_callable([$this, 'invalid_data']))
             {
               $this->invalid_data($item);
             }
@@ -135,8 +176,8 @@ abstract class Container extends Arrayish
     }
   }
 
-  // Overridden to_array() method.
-  public function to_array ($opts=array())
+  // Overridden to_[] method.
+  public function to_array ($opts=[])
   {
     $unwrap = isset($opts['unwrap']) ? $opts['unwrap'] : true;
     if (isset($opts['null']))
@@ -147,10 +188,10 @@ abstract class Container extends Arrayish
     {
       $allownull = $this->data_allow_null;
     }
-    $array = array();
+    $array = [];
     foreach ($this->data as $val)
     {
-      if ($unwrap && is_object($val) && is_callable(array($val, 'to_array')))
+      if ($unwrap && is_object($val) && is_callable([$val, 'to_array']))
       { // Unwrap Data objects.
         $val = $val->to_array($opts);
       }
@@ -162,16 +203,25 @@ abstract class Container extends Arrayish
     return $array;
   }
 
-  public function append ($item, $indexname=Null)
+  public function append ($item, $indexname=null): void
   {
     $this->data[] = $item;
     $this->add_data_index($item, $indexname);
   }
 
-  public function insert ($item, $pos=0, $indexname=Null)
+  public function insert ($item, int $pos=0, $indexname=null): void
   {
     parent::insert($item, $pos);
     $this->add_data_index($item, $indexname);
+  }
+
+  public function insertAll (array $items, int $pos=0): void
+  {
+    parent::insertAll($items, $pos);
+    foreach ($items as $item)
+    {
+      $this->add_data_index($item);
+    }
   }
 
   // We override ArrayAccess to use $this->data_index for its source.
@@ -180,17 +230,14 @@ abstract class Container extends Arrayish
     if (!is_string($offset) && !is_int($offset))
     {
       error_log("Invalid offset: ".json_encode($offset));
-      return False;
+      return false;
     }
     return array_key_exists($offset, $this->data_index);
   }
 
   public function offsetGet ($offset): mixed
   {
-    if (isset($this->data_index[$offset]))
-      return $this->data_index[$offset];
-    else
-      return null;
+    return $this->data_index[$offset] ?? null;
   }
 
   public function offsetSet ($offset, $value): void
@@ -214,18 +261,18 @@ abstract class Container extends Arrayish
   }
 
   // And we override is() to use $this->data_index as well.
-  public function is ($key)
+  public function is ($key): bool
   {
     return isset($this->data_index[$key]);
   }
 
   // Find item matching certain rules.
   // The item must either be an array, or implement ArrayAccess.
-  public function find ($query, $single=False, $spawn=True)
+  public function find ($query, $single=false, $spawn=true)
   {
     if ($single)
     {
-      $found = Null;
+      $found = null;
     }
     elseif ($spawn)
     {
@@ -233,7 +280,7 @@ abstract class Container extends Arrayish
     }
     else
     {
-      $found = array();
+      $found = [];
     }
     // If there is more than 1 query, we need to match all of them.
     $matchAll = count($query) > 1;
@@ -249,12 +296,12 @@ abstract class Container extends Arrayish
       {
         if ($matchAll)
         { // We need to match all queries.
-          $matched = True;
+          $matched = true;
           foreach ($query as $key => $val)
           {
             if (!isset($item[$key]) || $item[$key] != $val)
             {
-              $matched = False;
+              $matched = false;
               break;
             }
           }
@@ -284,9 +331,9 @@ abstract class Container extends Arrayish
    *
    * @param  mixed  $data   Data to build object from (optional.)
    * @param  array  $opts   Options to build object with (optional.)
-   * @return mixed          Either a child Item, or Null on failure.
+   * @return mixed          Either a child Item, or null on failure.
    */
-  public function newItem ($data=Null, $opts=array())
+  public function newItem ($data=null, $opts=[])
   {
     $opts['parent'] = $this;
     $class = $this->get_itemclass();
@@ -305,7 +352,7 @@ abstract class Container extends Arrayish
    * @param  mixed    $data    Optional -- passed to newItem().
    * @param  array    $opts    Optional -- passed to newItem().
    */
-  public function addItem ($pos=Null, $data=Null, $opts=array())
+  public function addItem ($pos=null, $data=null, $opts=[])
   {
     $child = $this->newItem($data, $opts);
     if (isset($child))
