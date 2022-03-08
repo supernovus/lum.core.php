@@ -404,19 +404,22 @@ class Dep_Group
     {
       $cl = $this->closure;
       $cl($method, $args);
-      return true;
+      $ok = true;
     }
     catch (\Throwable $e)
-    { // We failed the call the method.
+    {
       if ($nofail)
-      { 
-        return false;
+      { // Mark the method as having failed, and leave.
+        $ok = false; 
       }
       else
-      {
+      { // End the whole process now.
         throw $e;
       }
     }
+
+    $this->called[$method] = $ok;
+    return $ok;
   }
 
 }
