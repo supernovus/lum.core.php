@@ -73,10 +73,13 @@ trait Cache
       return $this->_lum_cache_store;
     }
 
-    $core = \Lum\Core::getInstance();
-    if (isset($core->sess))
-    { // We're going to use a session cache.
-      return $core->sess;
+    if (class_exists('\Lum\Core'))
+    {
+      $core = \Lum\Core::getInstance();
+      if (isset($core->sess))
+      { // We're going to use a session cache.
+        return $core->sess;
+      }
     }
   }
 
