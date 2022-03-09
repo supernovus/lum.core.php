@@ -2,12 +2,33 @@
 
 namespace Lum\Plugins;
 
+// TODO:
+//
+//  - Split into its own package, `lum-router`, with separate files:
+//  -- Lum\Router\Router       [Router]
+//  --- Make `$route_methods` use only standard HTTP methods by default.
+//  --- Set `$default_placeholder` to `Vars::MODERN_PLACEHOLDER`.
+//  --- Remove the `extend` constructor option.
+//  -- Lum\Router\Route        [Route]
+//  -- Lum\Router\Vars         [RouteType]
+//  -- Lum\Router\Exception    [RouteException]
+//  -- Lum\Router\Constructor  [RouteConstructor]
+//  -- Lum\Router\Context      [RouteContext]
+//  -- Lum\Plugins\Router      {extends Lum\Router\Router}
+//  --- Override `$route_methods` with the custom methods in the current one.
+//  --- Set `$default_placeholder` to `Vars::CLASSIC_PLACEHOLDER`.
+//  --- Support the old `extend` constructor option.
+//  - Refactor all of the request parsing stuff that populates `Context`
+//    into a more modular, standalone set of classes that this can depend on.
+//    This may also integrate with replacements for the `Output` and `URL`
+//    plugins which are also outdated.
+//
+
 /**
  * Routing Dispatcher.
  * 
  * Matches routes based on rules.
  */
-
 class Router
 {
   use \Lum\Meta\SetProps;

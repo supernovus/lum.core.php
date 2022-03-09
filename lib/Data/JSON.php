@@ -46,7 +46,7 @@ trait JSON
       if (isset($optmap[$optname]))
       {
         $flag = $optmap[$optname];
-        \Lum\Core::set_flag($flags, $flag, $optvalue);
+        \Lum\Util::set_flag($flags, $flag, $optvalue);
       }
     }
 

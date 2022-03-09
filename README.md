@@ -8,7 +8,6 @@ The Lum\Core library, and it's primary plugins and helpers.
 
 | Class                   | Description                                       |
 | ----------------------- | ------------------------------------------------- |
-| Lum\Autoload            | Helper for managing extra autoloaders.            |
 | Lum\Core                | The Core class itself.                            |
 | Lum\Plugins\Capture     | A helper for capturing PHP output.                |
 | Lum\Plugins\Client      | A plugin to get information on client.            |
