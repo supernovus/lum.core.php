@@ -50,12 +50,15 @@ abstract class Container extends Arrayish
       return true;
     }
 
-    $id = $this->get_data_index($item);
+    $id = $this->get_data_id($item);
     if (isset($id))
     { // A valid id was found.
+      #error_log("Adding item with data id: $id");
       $this->data_index[$id] = $item;
       return true;
     }
+
+    error_log("add_data_index: no valid id could be determined");
 
     // No id could be determined.
     return false;
@@ -63,6 +66,8 @@ abstract class Container extends Arrayish
 
   public function get_data_id ($item)
   {
+    #error_log("get_data_id()");
+
     if (is_object($item))
     {
       // Check for methods first.
@@ -71,7 +76,9 @@ abstract class Container extends Arrayish
         $meth = [$item, $name];
         if (is_callable($meth))
         { // A method exists, call it.
+          #error_log("calling \$item->$name()");
           $id = $meth();
+          #error_log("id = ".json_encode($id));
           if (is_string($id) || is_numeric($id))
           {
             return $id;
@@ -84,7 +91,9 @@ abstract class Container extends Arrayish
       {
         try
         {
+          #error_log("checking for \$item->$name property");
           $id = $item->$name ?? null;
+          #error_log("id = ".json_encode($id));
           if (is_string($id) || is_numeric($id))
           {
             return $id;
@@ -100,9 +109,11 @@ abstract class Container extends Arrayish
     {
       foreach ($this->data_id_keys as $name)
       {
+        #error_log("checking for \$item[$name] value");
         if (isset($item[$name]))
         {
           $id = $item[$name];
+          #error_log("id = ".json_encode($id));
           if (is_string($id) || is_numeric($id))
           {
             return $id;
@@ -110,6 +121,8 @@ abstract class Container extends Arrayish
         }
       }
     }
+
+    error_log("no data id was found");
 
     // If we reached here, nothing matched.
     return null;
@@ -225,15 +238,6 @@ abstract class Container extends Arrayish
   }
 
   // We override ArrayAccess to use $this->data_index for its source.
-  public function offsetExists ($offset): bool
-  {
-    if (!is_string($offset) && !is_int($offset))
-    {
-      error_log("Invalid offset: ".json_encode($offset));
-      return false;
-    }
-    return array_key_exists($offset, $this->data_index);
-  }
 
   public function offsetGet ($offset): mixed
   {
@@ -260,7 +264,18 @@ abstract class Container extends Arrayish
     unset($this->data_index[$offset]);
   }
 
-  // And we override is() to use $this->data_index as well.
+  public function keyExists ($key): bool
+  {
+    #error_log("Container::keyExists($key)");
+    if (!is_string($key) && !is_numeric($key))
+    {
+      error_log("Invalid offset: ".json_encode($key));
+      return false;
+    }
+
+    return array_key_exists($key, $this->data_index);
+  }
+
   public function is ($key): bool
   {
     return isset($this->data_index[$key]);
