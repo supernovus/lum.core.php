@@ -33,7 +33,7 @@ class Sess implements \ArrayAccess
 
   public function offsetGet ($id): mixed
   {
-    return $_SESSION[$id];
+    return $_SESSION[$id] ?? null;
   }
 
   public function offsetExists ($id): bool
