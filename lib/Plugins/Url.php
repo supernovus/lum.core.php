@@ -62,7 +62,7 @@ class Url
     else
     {
       // No relative or full option set, determine based on passed URL/path.
-      $relative = str_contains($url, ':');
+      $relative = !str_contains($url, ':');
     }
 
     if ($relative)
