@@ -440,7 +440,7 @@ class Url
       'format' => $format + 1, 
       'type'   => $type + 1,
     ]);
-    return $s64->decode($object);
+    return $s64->decode($string);
   }
 
   /**

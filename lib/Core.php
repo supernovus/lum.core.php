@@ -262,9 +262,9 @@ class Core extends Util implements \ArrayAccess
   {
     $get = $this->offsetGet($path);
     if (isset($get))
-      return True;
+      return true;
     else
-      return False;
+      return false;
   }
 
   /**
@@ -314,7 +314,7 @@ class Core extends Util implements \ArrayAccess
       if (is_array($data) && isset($data[$part]))
         $data = $data[$part];
       else
-        return Null;
+        return null;
     }
     return $data;
   }
