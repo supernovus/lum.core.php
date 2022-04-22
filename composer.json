@@ -14,7 +14,7 @@
   {
     "lum/lum-compat": "^2.6",
     "lum/lum-file": "^2.0",
-    "lum/lum-encode": "^3.1",
+    "lum/lum-encode": "^3.3",
     "lum/lum-arrays": "^2.0"
   },
   "require-dev":

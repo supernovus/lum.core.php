@@ -14,15 +14,6 @@ use \Lum\Encode\Safe64;
 
 class Url
 {
-  const FORMAT_NONE   = -1;
-  const FORMAT_JSON   = 0;
-  const FORMAT_SERIAL = 1;
-  const FORMAT_UBJSON = 2;
-
-  const TYPE_STRING   = -1;
-  const TYPE_ARRAY    = 0;
-  const TYPE_OBJECT   = 1;
-
   const DEF_HTTP_PORT  = 80;
   const DEF_HTTPS_PORT = 443;
 
@@ -313,18 +304,6 @@ class Url
   }
 
   /**
-   * Create a new `Safe64` instance for encoding/decoding.
-   *
-   * @param array $opts  (Optional) Constructor options for the instance.
-   *
-   * @return \Lum\Encode\Safe64
-   */
-  public static function safe64(array $opts=[]): Safe64
-  {
-    return new Safe64($opts);
-  }
-
-  /**
    * Encode data with `Safe64`.
    *
    * @param mixed $data  Data to encode.
@@ -346,129 +325,6 @@ class Url
   public static function decodeData(string $string, array $opts=[]): mixed
   {
     return Safe64::decodeData($string, $opts);
-  }
-
-  /**
-   * Transform a PHP array/object into a URL-safe string.
-   *
-   * @deprecated Use `encodeData()` instead.
-   *
-   * @param mixed $input  The PHP array/object to encode.
-   * @param int  $format  (Optional) One of the `FORMAT_*` constants.
-   *  
-   *   These will be mapped to corresponding `\Lum\Encode\Safe64\Format` types.
-   *
-   *   - `Url::FORMAT_NONE` uses `Format::NONE` (Default value).
-   *   - `Url::FORMAT_JSON` uses `Format::JSON`
-   *   - `Url::FORMAT_SERIAL` uses `Format::SERIAL`
-   *   - `Url::FORMAT_UBJSON` uses `Format::UBJSON`
-   *                    
-   * @param bool $useTildes  (Optional) If `true` use the old tilde format.
-   *
-   *   This is kept for backwards compatibility, but is not recommended.
-   *
-   * @return string  A Safe64-encoded string.
-   */
-  public static function encodeObject (
-    mixed $object, 
-    int $format=self::FORMAT_JSON, 
-    bool $useTildes=false,
-    bool $showdep=true): string
-  {
-    if ($showdep) \Lum\Compat::deprecate("encodeObject() is deprecated");
-    $s64 = static::safe64(
-    [
-      'format'    => $format + 1, 
-      'useTildes' => $useTildes,
-    ]);
-    return $s64->encode($object);
-  }
-
-  /**
-   * An even older version of encodeObject().
-   *
-   * @deprecated Use `encodeData()` instead.
-   *
-   * @param mixed $input      The PHP array/object to encode.
-   * @param bool  $serialize  If true, `FORMAT_SERIAL`, otherwise `FORMAT_JSON`.
-   * @param bool  $tildes     Passed to `encodeObject()`.
-   *
-   */
-  public static function encodeArray (
-    mixed $object, 
-    bool $serialize=false, 
-    bool $tildes=false): string
-  {
-    \Lum\Compat::deprecate("encodeArray() is deprecated");
-    if ($serialize)
-      $format = self::FORMAT_SERIAL;
-    else
-      $format = self::FORMAT_JSON;
-    return self::encodeObject($object, $format, $tildes, false);
-  }
-
-  /** 
-   * Decode a string in encodeObject() format.
-   *
-   * @deprecated Use `decodeData()` instead.
-   *
-   * @param string $input   The URL string to decode.
-   * @param int    $format  (Optional) Same formats as encodeObject().
-   *
-   *   If there is no Safe64 header (v3 and later) on the string, then
-   *   the input format must match the format that was used to encode the
-   *   string, as we won't be able to auto-detect it.
-   *
-   * @param int $type  (Optional) One of the `TYPE_*` constants.
-   *  
-   *   These will be mapped to corresponding `\Lum\Encode\Safe64\Type` types.
-   *
-   *   - `Url::TYPE_ARRAY` uses `Type::Array` (default)
-   *   - `Url::TYPE_OBJECT` uses `Type::Object`
-   *   - `Url::TYPE_STRING` uses `Type::String`
-   *
-   */
-  public static function decodeObject (
-    string $string, 
-    int $format=self::FORMAT_JSON, 
-    int $type=self::TYPE_ARRAY,
-    bool $showdep=true): mixed
-  {
-    if ($showdep) \Lum\Compat::deprecate("decodeObject() is deprecated");
-    $s64 = static::safe64(
-    [
-      'format' => $format + 1, 
-      'type'   => $type + 1,
-    ]);
-    return $s64->decode($string);
-  }
-
-  /**
-   * An even old version of decodeObject().
-   *
-   * @deprecated Use `decodeData()` instead.
-   *
-   * @param string $input        The URL string to decode.
-   * @param bool   $serialized   If true, FORMAT_SERIAL, otherwise FORMAT_JSON.
-   * @param bool   $assoc        If false, TYPE_OBJECT, otherwise TYPE_ARRAY.
-   *
-   * See decodeObject() for the rest of the details.
-   */
-  public static function decodeArray (
-    string $string, 
-    bool $serialized=false, 
-    bool $assoc=true): mixed
-  {
-    \Lum\Compat::deprecate("decodeArray() is deprecated");
-    if ($serialized)
-      $format = self::FORMAT_SERIAL;
-    else
-      $format = self::FORMAT_JSON;
-    if ($assoc)
-      $type = self::TYPE_ARRAY;
-    else
-      $type = self::TYPE_OBJECT;
-    return self::decodeObject($string, $format, $type, false);
   }
 
 }
