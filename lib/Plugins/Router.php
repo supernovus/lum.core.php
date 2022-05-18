@@ -1444,7 +1444,9 @@ class RouteContext implements \ArrayAccess
   {
     if (isset($this->router) && in_array($name, static::ROUTER_METHODS))
     { // There's a valid Router and callable method in it, go there.
-      return call_user_func_array([$this->router, $name], $args);
+      return $this->router->$name(...$args);
+      
+      //// return call_user_func_array([$this->router, $name], $args);
     }
     else
     {
