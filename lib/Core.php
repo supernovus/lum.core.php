@@ -3,11 +3,9 @@
 namespace Lum;
 
 /** 
- * The Lum Core. 
+ * The Lum Core.
  *
- * It's a simple singleton object that offers plugins to help make building
- * PHP apps simple. Does not use the regular PHP constructor.
- * Instead you do \Lum\Core::getInstance().
+ * It's a singleton object that offers plugins to help make PHP apps *fun*.
  */
 class Core extends Util implements \ArrayAccess
 {

@@ -1,8 +1,7 @@
 <?php
 
 /**
- * Capture script output. Used by $core->site plugin.
- *
+ * Capture script output. 
  */
 
 namespace Lum\Plugins;
