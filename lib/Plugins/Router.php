@@ -14,6 +14,7 @@ namespace Lum\Plugins;
 //  -- Lum\Router\Exception    [RouteException]
 //  -- Lum\Router\Constructor  [RouteConstructor]
 //  -- Lum\Router\Context      [RouteContext]
+//  - Another package, `lum-plugins-router`, with one class:
 //  -- Lum\Plugins\Router      {extends Lum\Router\Router}
 //  --- Override `$route_methods` with the custom methods in the current one.
 //  --- Set `$default_placeholder` to `Vars::CLASSIC_PLACEHOLDER`.
