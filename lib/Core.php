@@ -200,7 +200,7 @@ class Core extends Util implements \ArrayAccess
       throw new Exception("Cannot overwrite 'plugins' plugin.");
     }
 
-    $A = self::AZ;
+    $A = 'as';
     $P = self::A_PLUG;
 
     if (is_array($value))
@@ -253,9 +253,9 @@ class Core extends Util implements \ArrayAccess
     {
       return $this->lib[$offset];
     }
-    elseif ($this->lib[L_PLUG]->is($offset))
+    elseif ($this->lib[self::L_PLUG]->is($offset))
     { // A plugin matched, let's load it.
-      $this->lib[L_PLUG]->load($offset);
+      $this->lib[self::L_PLUG]->load($offset);
       return $this->lib[$offset];
     }
     else
