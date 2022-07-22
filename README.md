@@ -1,14 +1,18 @@
 # lum.core.php
 
-## NOTE
-
-This is currently in the process of being ripped apart.
-I will not release it as version `3.0` until I'm finished everything in the
-[TODO](TODO.md) document.
-
 ## Summary
 
-The `Lum\Core` library, and it's primary plugins and helpers.
+A small class with a singleton instance that can be used to manage the
+lifecycle of a PHP application, acting as a director for models, controllers,
+and views.
+
+It also supports additional plugins that have a ton of extra functionality.
+
+Despite the name of the package and class, this is not in fact the singular 
+*core* library that everything else in the **Lum.php** collections builds upon.
+It used to be in the `1.x` days, but has since become just the App Director
+singleton class. See [lum-compat](https://github.com/supernovus/lum.compat.php)
+for the *true* fundamental core class that the whole PHP library set uses.
 
 ## Classes
 
@@ -16,21 +20,30 @@ The `Lum\Core` library, and it's primary plugins and helpers.
 | ----------------------- | ------------------------------------------------- |
 | Lum\Core                | The Core class itself.                            |
 | Lum\Plugins\Capture     | A helper for capturing PHP output.                |
-| Lum\Plugins\Client      | A plugin to get information on client.            |
 | Lum\Plugins\Controllers | A plugin for loading controllers.                 |
-| Lum\Plugins\Fakeserver  | A plugin for using 'cli' or 'cli-server' SAPI.    |
 | Lum\Plugins\Instance    | A base class for loading class instances.         |
 | Lum\Plugins\Models      | A plugin for loading models.                      |
-| Lum\Plugins\Output      | A plugin for setting output options.              |
 | Lum\Plugins\Plugins     | A meta-plugin for loading plugins.                |
 | Lum\Plugins\Sess        | A plugin for managing PHP Sessions.               |
-| Lum\Plugins\Site        | A plugin for building simple PHP sites.           |
-| Lum\Plugins\Url         | A plugin for working with URLs.                   |
 | Lum\Plugins\Views       | A plugin for loading views.                       |
+
+## Traits
+
+| Trait                   | Description                                       |
+| ----------------------- | ------------------------------------------------- |
 | Lum\Loader\Content      | A loader trait for parsing PHP content.           |
 | Lum\Loader\Files        | A loader trait for finding files in a folder.     |
 | Lum\Loader\Instance     | A loader trait for creating an object instance.   |
 | Lum\Loader\Namespaces   | A loader trait for finding classes in namespaces. |
+
+## Note on Plugins
+
+Prior to `v3.0` most of the additional plugins were included in the `core`
+package itself, but I decided that it made more sense to split them off into
+their own packages. A *suggested* 
+[lum-core-plugins](https://github.com/supernovus/lum.core-plugins.php) 
+*meta-package* will be available to install all of the plugins that used to 
+be included in this package.
 
 ## Creating a Core instance
 

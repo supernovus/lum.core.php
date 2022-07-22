@@ -19,8 +19,11 @@
   },
   "require-dev":
   {
-    "lum/lum-test": "^3.0",
-    "lum/simpledom": "^2.1.2 || ^3.0"
+    "lum/lum-test": "^3.0"
+  },
+  "suggest":
+  {
+    "lum/lum-core-plugins": "A full set of Core plugins"
   },
   "autoload":
   {

@@ -3,7 +3,7 @@
 namespace Lum;
 
 /** 
- * The Lum Core.
+ * The Lum Core object.
  *
  * It's a singleton object that offers plugins to help make PHP apps *fun*.
  */
@@ -12,6 +12,8 @@ class Core extends Util implements \ArrayAccess
   const L_PLUG = 'plugins';
   const O_PLUG = 'plugins';
   const O_UOPZ = 'do_uopz';
+
+  const A_PLUG = 'plugin';
 
   protected static $__instance;
 
@@ -183,22 +185,31 @@ class Core extends Util implements \ArrayAccess
   }
 
   /**
+   * Load a plugin, but with a different name.
+   *
+   * Especially useful if a single plugin can be used multiple times.
+   * Like the `views` plugin where there may be several types of views.
+   *
    * Use like: $core->targetname = 'pluginname';
    * or:       $core->targetname = ['plugin'=>$name, ...];
    */
   public function __set($offset, $value)
   {
-    if ($offset == 'plugins')
+    if ($offset == self::L_PLUG)
     {
       throw new Exception("Cannot overwrite 'plugins' plugin.");
     }
+
+    $A = self::AZ;
+    $P = self::A_PLUG;
+
     if (is_array($value))
     {
       $opts = $value;
-      if (isset($value['plugin']))
+      if (isset($value[$P]))
       {
-        $class = $value['plugin'];
-        $opts['as'] = $offset;
+        $class = $value[$P];
+        $opts[$A] = $offset;
       }
       else
       {
@@ -208,24 +219,26 @@ class Core extends Util implements \ArrayAccess
     elseif (is_string($value))
     {
       $class = $value;
-      $opts  = ['as'=>$offset];
+      $opts  = [$A=>$offset];
     }
     else
     {
       throw new Exception("Unsupported library load value");
     }
 
-    $this->lib['plugins']->load($class, $opts);
+    $this->lib[self::L_PLUG]->load($class, $opts);
   }
 
   /**
+   * Remove a loaded plugin.
+   *
    * Not recommended, but no longer forbidden, except for 'plugins'.
    */
   public function __unset ($offset)
   {
-    if ($offset == 'plugins')
+    if ($offset == self::L_PLUG)
     {
-      throw new Exception("Cannot remove the 'plugins' plugin.");
+      throw new Exception("Cannot remove the Plugins plugin.");
     }
     unset($this->lib[$offset]);
   }
@@ -240,9 +253,9 @@ class Core extends Util implements \ArrayAccess
     {
       return $this->lib[$offset];
     }
-    elseif ($this->lib['plugins']->is($offset))
+    elseif ($this->lib[L_PLUG]->is($offset))
     { // A plugin matched, let's load it.
-      $this->lib['plugins']->load($offset);
+      $this->lib[L_PLUG]->load($offset);
       return $this->lib[$offset];
     }
     else
